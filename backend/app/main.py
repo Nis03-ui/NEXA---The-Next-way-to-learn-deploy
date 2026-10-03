@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
-from app.api import admin, ai, auth, teacher, users
+from app.api import admin, ai, auth, quiz as quiz_api, teacher, users
 from app.core.config import settings
 from app.core.exceptions import (
     AppError,
@@ -92,6 +92,11 @@ app.include_router(
 
 app.include_router(
     teacher.router,
+    prefix=API_PREFIX,
+)
+
+app.include_router(
+    quiz_api.router,
     prefix=API_PREFIX,
 )
 

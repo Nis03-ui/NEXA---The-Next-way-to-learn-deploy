@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -8,6 +8,7 @@ from app.models.content import Content
 from app.models.user import Role, User
 from app.schemas.content import ContentCreate, ContentOut, ContentUpdate
 from app.services.indexing import ContentIndexingService
+from app.services.pdf import PDFExtractionService
 
 
 router = APIRouter(prefix="/teacher", tags=["Teacher"])
@@ -48,6 +49,77 @@ async def create_content(
     return content
 
 
+@router.post(
+    "/content/upload",
+    response_model=ContentOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def upload_content(
+    title: str = Form(..., min_length=2, max_length=200),
+    subject: str = Form(..., min_length=2, max_length=100),
+    description: str | None = Form(None, max_length=500),
+    published: bool = Form(False),
+    file: UploadFile = File(...),
+    user: User = Depends(require_roles(Role.TEACHER, Role.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+):
+    if not file.filename:
+        raise HTTPException(
+            status_code=400,
+            detail="A file is required.",
+        )
+
+    if not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(
+            status_code=400,
+            detail="Only PDF files are supported.",
+        )
+
+    try:
+        extraction_service = PDFExtractionService()
+
+        extracted_text, pages = await extraction_service.extract(file)
+
+        content = Content(
+            title=title,
+            description=description,
+            body=extracted_text,
+            subject=subject,
+            published=published,
+            author_id=user.id,
+        )
+
+        db.add(content)
+
+        await db.flush()
+
+        indexing_service = ContentIndexingService()
+
+        await indexing_service.index_content(
+            content=content,
+            db=db,
+        )
+
+        await db.commit()
+        await db.refresh(content)
+
+        return content
+
+    except HTTPException:
+        await db.rollback()
+        raise
+
+    except Exception as exc:
+        await db.rollback()
+
+        print("NEXA TEACHER PDF UPLOAD ERROR:", repr(exc))
+
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to upload and index the PDF.",
+        ) from exc
+
+
 @router.get(
     "/content",
     response_model=list[ContentOut],
@@ -57,8 +129,7 @@ async def get_content(
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
-        select(Content)
-        .order_by(Content.created_at.desc())
+        select(Content).order_by(Content.created_at.desc())
     )
 
     return result.scalars().all()

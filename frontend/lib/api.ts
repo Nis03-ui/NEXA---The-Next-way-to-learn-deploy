@@ -133,7 +133,7 @@ export async function api<T>(
 
   const headers = new Headers(options.headers)
 
-  if (options.body) {
+  if (options.body && !(options.body instanceof FormData)) {
     headers.set("Content-Type", "application/json")
   }
 
@@ -309,7 +309,57 @@ export const teacher = {
     }),
 
   deleteContent: (id: number) =>
-    api<unknown>(`/teacher/content/${id}`, {
+    api<{ message: string }>(`/teacher/content/${id}`, {
+      method: "DELETE",
+    }),
+
+  uploadPDF: (
+    file: File,
+    title: string,
+    subject: string,
+    description?: string,
+    published = false,
+  ) => {
+    const formData = new FormData()
+
+    formData.append("file", file)
+    formData.append("title", title)
+    formData.append("subject", subject)
+    formData.append("published", String(published))
+
+    if (description) {
+      formData.append("description", description)
+    }
+
+    return api<Content>("/teacher/content/upload", {
+      method: "POST",
+      body: formData,
+    })
+  },
+
+  getQuizzes: () =>
+    api<QuizListItem[]>("/quizzes"),
+
+  getQuiz: (id: number) =>
+    api<Quiz>(`/quizzes/${id}`),
+
+  createQuiz: (data: QuizCreate) =>
+    api<Quiz>("/quizzes", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  updateQuiz: (
+    id: number,
+    data: QuizUpdate,
+  ) =>
+    api<Quiz>(`/quizzes/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+
+  deleteQuiz: (id: number) =>
+    api<{ message: string }>(`/quizzes/${id}`, {
       method: "DELETE",
     }),
 }
@@ -414,4 +464,44 @@ export const quizzes = {
 
   getAttempts: (id: number) =>
     api<QuizAttempt[]>(`/quizzes/${id}/attempts`),
+}
+
+/* =========================================================
+   ADMIN API
+========================================================= */
+
+export type AdminUser = {
+  id: number
+  name: string
+  email: string
+  role: Role
+}
+
+export type RoleUpdate = {
+  role: Role
+}
+
+export const admin = {
+  getUsers: () =>
+    api<AdminUser[]>("/admin/users"),
+
+  updateRole: (
+    userId: number,
+    role: Role,
+  ) =>
+    api<AdminUser>(
+      `/admin/users/${userId}/role`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ role }),
+      },
+    ),
+
+  deleteUser: (userId: number) =>
+    api<{ message: string }>(
+      `/admin/users/${userId}`,
+      {
+        method: "DELETE",
+      },
+    ),
 }
