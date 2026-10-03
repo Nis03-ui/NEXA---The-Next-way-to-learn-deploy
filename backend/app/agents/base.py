@@ -1,14 +1,27 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from typing import Literal
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
+AgentSourceType = Literal[
+    "course_content",
+    "student_document",
+]
+
+
 @dataclass(frozen=True)
 class AgentSource:
-    content_id: int
+    source_type: AgentSourceType
+
+    content_id: int | None
+    document_id: int | None
+
     title: str
-    subject: str
+    subject: str | None
+    filename: str | None
+
     chunk_index: int
     distance: float
 
@@ -39,6 +52,7 @@ class BaseAgent(ABC):
         conversation: str = "",
         db: AsyncSession | None = None,
         mode: str = "normal",
+        user_id: int | None = None,
     ) -> AgentResult:
         """
         Execute the agent and return a structured result.

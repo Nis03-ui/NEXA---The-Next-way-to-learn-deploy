@@ -47,3 +47,8 @@ out/
 # =========================
 .DS_Store
 Thumbs.db
+
+# Deployment artifacts / local debugging
+backend.zip
+frontend.zip
+backend/debug_student_search.py

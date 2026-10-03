@@ -3,8 +3,13 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
-
-from app.api import admin, ai, auth, quiz as quiz_api, teacher, users
+from app.api import admin, ai, auth, teacher, users
+from app.api import quiz as quiz_api
+from app.api import course as course_api
+from app.api import course_material as course_material_api
+from app.api import assignment as assignment_api
+from app.api import schedule as schedule_api
+from app.api import notification as notification_api
 from app.core.config import settings
 from app.core.exceptions import (
     AppError,
@@ -94,13 +99,32 @@ app.include_router(
     teacher.router,
     prefix=API_PREFIX,
 )
-
 app.include_router(
     quiz_api.router,
     prefix=API_PREFIX,
 )
 
-
+app.include_router(
+    course_api.router,
+    prefix=API_PREFIX,
+)
+app.include_router(
+    schedule_api.router,
+    prefix=API_PREFIX,
+)
+app.include_router(
+    course_material_api.router,
+    prefix=API_PREFIX,
+)
+app.include_router(
+    assignment_api.router,
+    prefix=API_PREFIX,
+)
+app.include_router(notification_api.router, prefix=API_PREFIX)
+app.include_router(
+    notification_api.router,
+    prefix=API_PREFIX,
+)
 # ============================================================
 # Health & Readiness
 # ============================================================

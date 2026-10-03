@@ -18,6 +18,13 @@ class Settings(BaseSettings):
 
     frontend_origin: str = "http://localhost:3000"
 
+    smtp_host: str = "smtp.gmail.com"
+    smtp_port: int = 587
+    smtp_username: str | None = None
+    smtp_password: str | None = None
+    smtp_from_email: str | None = None
+    smtp_from_name: str = "NEXA"
+
     gemini_api_key: str | None = None
 
     model_config = SettingsConfigDict(

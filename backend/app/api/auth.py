@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.security import (
     create_token,
     current_user,
@@ -29,6 +30,7 @@ from app.services.auth import (
     revoke_refresh_token,
     rotate_refresh_token,
 )
+from app.services.email import send_email
 from app.services.email_verification import (
     create_email_verification_token,
     verify_email,
@@ -71,6 +73,11 @@ async def forgot_password(
     data: ForgotPasswordRequest,
     db: AsyncSession = Depends(get_db),
 ):
+    generic_message = (
+        "If an account exists for that email, "
+        "a password reset link has been sent."
+    )
+
     user = (
         await db.execute(
             select(User).where(
@@ -79,14 +86,10 @@ async def forgot_password(
         )
     ).scalar_one_or_none()
 
-    # Keep the response generic so the endpoint does not
-    # reveal whether an email is registered.
+    # Never reveal whether the email is registered.
     if user is None:
         return ForgotPasswordResponse(
-            message=(
-                "If the account exists, "
-                "a password reset token has been created."
-            )
+            message=generic_message,
         )
 
     reset_token = await create_password_reset_token(
@@ -94,17 +97,85 @@ async def forgot_password(
         db=db,
     )
 
-    await db.commit()
+    reset_url = (
+        f"{settings.frontend_origin}/reset-password"
+        f"?token={reset_token}"
+    )
 
-    # Development only.
-    # In production, this token will be sent through email
-    # instead of being returned by the API.
+    try:
+        send_email(
+            to_email=user.email,
+            subject="Reset your NEXA password",
+            html_content=f"""
+            <html>
+              <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #0f172a;">
+                <div style="max-width: 560px; margin: 0 auto; padding: 32px;">
+                  <h1 style="margin-bottom: 8px;">NEXA</h1>
+
+                  <p>Hello {user.name},</p>
+
+                  <p>
+                    We received a request to reset the password
+                    for your NEXA account.
+                  </p>
+
+                  <p>
+                    <a
+                      href="{reset_url}"
+                      style="
+                        display: inline-block;
+                        padding: 12px 20px;
+                        background: #0f172a;
+                        color: #ffffff;
+                        text-decoration: none;
+                        border-radius: 8px;
+                        font-weight: 600;
+                      "
+                    >
+                      Reset password
+                    </a>
+                  </p>
+
+                  <p>
+                    This link will expire after
+                    {settings.password_reset_expire_minutes} minutes.
+                  </p>
+
+                  <p>
+                    If you did not request a password reset,
+                    you can safely ignore this email.
+                  </p>
+
+                  <p>
+                    — NEXA<br />
+                    The Next Way to Learn
+                  </p>
+                </div>
+              </body>
+            </html>
+            """,
+        )
+
+        # Only persist the reset token after the email
+        # has been successfully handed to the SMTP server.
+        await db.commit()
+
+    except Exception as exc:
+        await db.rollback()
+
+        # Log the actual SMTP failure server-side for debugging.
+        # Never expose provider details to the client.
+        print(
+            f"[PASSWORD RESET EMAIL ERROR] "
+            f"{type(exc).__name__}: {exc}"
+        )
+
+        return ForgotPasswordResponse(
+            message=generic_message,
+        )
+
     return ForgotPasswordResponse(
-        message=(
-            "If the account exists, "
-            "a password reset token has been created."
-        ),
-        reset_token=reset_token,
+        message=generic_message,
     )
 
 
@@ -257,6 +328,7 @@ async def register(
         password_hash=hash_password(
             data.password
         ),
+        role=data.role,
         email_verified=False,
     )
 

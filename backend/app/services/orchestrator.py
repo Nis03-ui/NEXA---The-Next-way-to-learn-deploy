@@ -17,7 +17,8 @@ class AIOrchestrator:
     2. Respect an explicitly selected tutor mode.
     3. Select the appropriate agent.
     4. Provide required dependencies.
-    5. Return the structured agent result.
+    5. Provide the authenticated user's identity when needed.
+    6. Return the structured agent result.
     """
 
     def __init__(self):
@@ -93,6 +94,13 @@ class AIOrchestrator:
             "chapter",
             "resource",
             "material",
+            "pdf",
+            "document",
+            "uploaded",
+            "my file",
+            "my files",
+            "my document",
+            "my documents",
         ]
 
         if any(
@@ -156,6 +164,7 @@ class AIOrchestrator:
         conversation: str = "",
         db: AsyncSession | None = None,
         mode: str = "normal",
+        user_id: int | None = None,
     ) -> AgentResult:
 
         agent_name = self.select_agent(
@@ -178,4 +187,5 @@ class AIOrchestrator:
             conversation=conversation,
             db=db,
             mode=mode,
+            user_id=user_id,
         )

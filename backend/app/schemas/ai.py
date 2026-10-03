@@ -25,9 +25,18 @@ class ChatRequest(BaseModel):
 
 
 class AISource(BaseModel):
-    content_id: int
+    source_type: Literal[
+        "course_content",
+        "student_document",
+    ]
+
+    content_id: int | None = None
+    document_id: int | None = None
+
     title: str
-    subject: str
+    subject: str | None = None
+    filename: str | None = None
+
     chunk_index: int
     distance: float
 

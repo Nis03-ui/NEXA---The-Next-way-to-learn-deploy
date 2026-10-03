@@ -13,6 +13,7 @@ class RegisterRequest(BaseModel):
         min_length=8,
         max_length=128,
     )
+    role: Role = Role.STUDENT
 
 
 class LoginRequest(BaseModel):
@@ -29,6 +30,15 @@ class UserOut(BaseModel):
     model_config = ConfigDict(
         from_attributes=True,
     )
+
+
+class ProfileUpdateRequest(BaseModel):
+    name: str | None = Field(
+        default=None,
+        min_length=2,
+        max_length=120,
+    )
+    email: EmailStr | None = None
 
 
 class TokenResponse(BaseModel):
@@ -59,7 +69,6 @@ class ForgotPasswordRequest(BaseModel):
 
 class ForgotPasswordResponse(BaseModel):
     message: str
-    reset_token: str | None = None
 
 
 class ResetPasswordRequest(BaseModel):
@@ -87,7 +96,6 @@ class VerifyEmailRequest(BaseModel):
 
 class ResendVerificationRequest(BaseModel):
     email: EmailStr
-
 
 class VerificationResponse(BaseModel):
     message: str

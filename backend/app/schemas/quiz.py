@@ -12,6 +12,7 @@ class QuizQuestionCreate(BaseModel):
 
 
 class QuizCreate(BaseModel):
+    course_id: int | None = None
     title: str = Field(min_length=1, max_length=200)
     description: str | None = None
     subject: str = Field(min_length=1, max_length=100)
@@ -71,6 +72,7 @@ class QuizQuestionResponse(BaseModel):
 
 class QuizResponse(BaseModel):
     id: int
+    course_id: int | None
     title: str
     description: str | None
     subject: str
@@ -84,6 +86,7 @@ class QuizResponse(BaseModel):
 
 class QuizSummaryResponse(BaseModel):
     id: int
+    course_id: int | None
     title: str
     description: str | None
     subject: str

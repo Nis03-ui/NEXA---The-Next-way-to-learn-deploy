@@ -14,6 +14,7 @@ from app.models.quiz import (
     QuizQuestion,
 )
 from app.models.user import Role, User
+from app.services.notification import notify_course_students
 from app.schemas.quiz import (
     QuizAttemptCreate,
     QuizAttemptResponse,
@@ -100,6 +101,7 @@ def build_quiz_response(
 
     return QuizResponse(
         id=quiz.id,
+        course_id=quiz.course_id,
         title=quiz.title,
         description=quiz.description,
         subject=quiz.subject,
@@ -129,6 +131,7 @@ async def create_quiz(
 ):
     quiz = Quiz(
         title=data.title,
+        course_id=data.course_id,
         description=data.description,
         subject=data.subject,
         author_id=user.id,
@@ -151,6 +154,18 @@ async def create_quiz(
         quiz.questions.append(question)
 
     db.add(quiz)
+
+    await db.flush()
+
+    if quiz.course_id is not None:
+        await notify_course_students(
+            db=db,
+            course_id=quiz.course_id,
+            notification_type="QUIZ",
+            title="New Quiz",
+            message=f"New quiz: {quiz.title}",
+            quiz_id=quiz.id,
+        )
 
     await db.commit()
 
@@ -181,6 +196,7 @@ async def list_quizzes(
     query = (
         select(
             Quiz.id,
+            Quiz.course_id,
             Quiz.title,
             Quiz.description,
             Quiz.subject,
@@ -217,6 +233,7 @@ async def list_quizzes(
     return [
         QuizSummaryResponse(
             id=row.id,
+            course_id=row.course_id,
             title=row.title,
             description=row.description,
             subject=row.subject,
