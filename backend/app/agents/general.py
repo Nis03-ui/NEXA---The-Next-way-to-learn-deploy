@@ -21,6 +21,7 @@ class GeneralAgent(BaseAgent):
         conversation: str = "",
         db: AsyncSession | None = None,
         mode: str = "normal",
+        user_id: int | None = None,
     ) -> AgentResult:
 
         system_instruction = """

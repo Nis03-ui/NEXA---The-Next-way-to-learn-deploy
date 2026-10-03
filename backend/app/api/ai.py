@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import current_user
 from app.db.session import get_db
 from app.models.chat import ChatMessage, ChatSession
+from app.models.student_document import StudentDocument
 from app.models.user import User
 from app.schemas.ai import (
     AISource,
@@ -14,6 +15,8 @@ from app.schemas.ai import (
     ChatSessionOut,
 )
 from app.services.ai import answer
+from app.services.pdf import PDFExtractionService
+from app.services.student_documents import StudentDocumentIndexingService
 
 
 router = APIRouter(
@@ -23,7 +26,7 @@ router = APIRouter(
 
 
 # ============================================================
-# HELPERS
+# CHAT SESSION HELPERS
 # ============================================================
 
 
@@ -32,22 +35,19 @@ async def get_owned_session(
     user_id: int,
     db: AsyncSession,
 ) -> ChatSession:
-    """
-    Return a chat session belonging to the current user.
-
-    A session owned by another user is intentionally treated
-    as not found to avoid exposing its existence.
-    """
-
-    session = await db.get(
-        ChatSession,
-        session_id,
+    result = await db.execute(
+        select(ChatSession).where(
+            ChatSession.id == session_id,
+            ChatSession.user_id == user_id,
+        )
     )
 
-    if session is None or session.user_id != user_id:
+    session = result.scalar_one_or_none()
+
+    if session is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Chat session not found",
+            detail="Chat session not found.",
         )
 
     return session
@@ -58,50 +58,153 @@ async def build_conversation(
     db: AsyncSession,
     limit: int = 20,
 ) -> str:
-    """
-    Build recent conversation history for the AI.
-
-    The newest `limit` messages are used while preserving
-    chronological order.
-    """
-
     result = await db.execute(
         select(ChatMessage)
-        .where(
-            ChatMessage.session_id == session_id
-        )
-        .order_by(
-            ChatMessage.created_at.desc(),
-            ChatMessage.id.desc(),
-        )
+        .where(ChatMessage.session_id == session_id)
+        .order_by(ChatMessage.created_at.desc())
         .limit(limit)
     )
 
-    messages = list(
-        reversed(result.scalars().all())
-    )
+    messages = list(reversed(result.scalars().all()))
 
-    return "\n".join(
-        f"{message.role}: {message.content}"
-        for message in messages
-    )
+    conversation_parts = []
+
+    for message in messages:
+        role = (
+            "Student"
+            if message.role == "user"
+            else "NEXA"
+        )
+
+        conversation_parts.append(
+            f"{role}: {message.content}"
+        )
+
+    return "\n\n".join(conversation_parts)
 
 
 def build_sources(result) -> list[AISource]:
+    sources = []
+
+    for source in result.sources:
+        sources.append(
+            AISource(
+                source_type=source.source_type,
+                content_id=source.content_id,
+                document_id=source.document_id,
+                title=source.title,
+                subject=source.subject,
+                filename=source.filename,
+                chunk_index=source.chunk_index,
+                distance=source.distance,
+            )
+        )
+
+    return sources
+
+
+# ============================================================
+# STUDENT DOCUMENT UPLOAD
+# ============================================================
+
+
+@router.post(
+    "/documents/upload",
+    status_code=status.HTTP_201_CREATED,
+)
+async def upload_document(
+    file: UploadFile = File(...),
+    user: User = Depends(current_user),
+    db: AsyncSession = Depends(get_db),
+):
     """
-    Convert internal agent sources into API response schemas.
+    Upload a private PDF for the authenticated student.
+
+    Pipeline:
+
+    PDF
+        ↓
+    Text extraction
+        ↓
+    Chunking
+        ↓
+    Embeddings
+        ↓
+    pgvector
     """
 
-    return [
-        AISource(
-            content_id=source.content_id,
-            title=source.title,
-            subject=source.subject,
-            chunk_index=source.chunk_index,
-            distance=source.distance,
+    try:
+        filename = file.filename or "document.pdf"
+
+        # --------------------------------------------------------
+        # Extract PDF text
+        # --------------------------------------------------------
+
+        extracted_text, page_count = (
+            await PDFExtractionService().extract(file)
         )
-        for source in result.sources
-    ]
+
+        # --------------------------------------------------------
+        # Create document record
+        # --------------------------------------------------------
+
+        document = StudentDocument(
+            owner_id=user.id,
+            filename=filename,
+            title=filename.rsplit(
+                ".",
+                1,
+            )[0][:200],
+            content_type="application/pdf",
+            extracted_text=extracted_text,
+        )
+
+        db.add(document)
+
+        # Generate document ID before creating chunks.
+        await db.flush()
+
+        # --------------------------------------------------------
+        # Chunk + embed + index
+        # --------------------------------------------------------
+
+        await StudentDocumentIndexingService().index_document(
+            document=document,
+            db=db,
+        )
+
+        # --------------------------------------------------------
+        # Commit
+        # --------------------------------------------------------
+
+        await db.commit()
+
+        await db.refresh(document)
+
+        return {
+            "id": document.id,
+            "filename": document.filename,
+            "title": document.title,
+            "pages": page_count,
+            "message": "Document uploaded and indexed successfully.",
+        }
+
+    except HTTPException:
+        await db.rollback()
+        raise
+
+    except Exception as exc:
+        await db.rollback()
+
+        print(
+            "NEXA DOCUMENT UPLOAD ERROR:",
+            repr(exc),
+        )
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to process the uploaded document.",
+        ) from exc
 
 
 # ============================================================
@@ -124,7 +227,7 @@ async def chat(
 
     Behavior:
 
-    - Creates a new session when `session_id` is omitted.
+    - Creates a new session when session_id is omitted.
     - Reuses an existing session when provided.
     - Stores the user's message.
     - Builds recent conversation history.
@@ -155,7 +258,7 @@ async def chat(
 
             db.add(session)
 
-            # Generate the session ID before creating
+            # Generate session ID before creating
             # the first message.
             await db.flush()
 
@@ -192,6 +295,7 @@ async def chat(
             conversation=conversation,
             db=db,
             mode=data.mode,
+            user_id=user.id,
         )
 
         # --------------------------------------------------------
@@ -226,6 +330,14 @@ async def chat(
     except Exception as exc:
         await db.rollback()
 
+        # Temporary diagnostic logging.
+        # Remove or replace with proper application logging
+        # after the RAG issue is diagnosed.
+        print(
+            "NEXA CHAT ERROR:",
+            repr(exc),
+        )
+
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="NEXA AI service is currently unavailable.",
@@ -251,20 +363,11 @@ async def get_sessions(
 
     result = await db.execute(
         select(ChatSession)
-        .where(
-            ChatSession.user_id == user.id
-        )
-        .order_by(
-            ChatSession.created_at.desc()
-        )
+        .where(ChatSession.user_id == user.id)
+        .order_by(ChatSession.created_at.desc())
     )
 
-    return result.scalars().all()
-
-
-# ============================================================
-# SINGLE CHAT SESSION
-# ============================================================
+    return list(result.scalars().all())
 
 
 @router.get(
@@ -288,16 +391,11 @@ async def get_session(
 
     result = await db.execute(
         select(ChatMessage)
-        .where(
-            ChatMessage.session_id == session.id
-        )
-        .order_by(
-            ChatMessage.created_at.asc(),
-            ChatMessage.id.asc(),
-        )
+        .where(ChatMessage.session_id == session.id)
+        .order_by(ChatMessage.created_at.asc())
     )
 
-    messages = result.scalars().all()
+    messages = list(result.scalars().all())
 
     return ChatSessionDetail(
         id=session.id,
@@ -305,11 +403,6 @@ async def get_session(
         created_at=session.created_at,
         messages=messages,
     )
-
-
-# ============================================================
-# DELETE CHAT SESSION
-# ============================================================
 
 
 @router.delete(
@@ -322,7 +415,7 @@ async def delete_session(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Delete a user's chat session and its messages.
+    Delete one of the current user's chat sessions.
     """
 
     session = await get_owned_session(
@@ -331,25 +424,10 @@ async def delete_session(
         db=db,
     )
 
-    try:
-        await db.execute(
-            delete(ChatMessage).where(
-                ChatMessage.session_id == session.id
-            )
-        )
+    await db.delete(session)
 
-        await db.delete(session)
+    await db.commit()
 
-        await db.commit()
-
-        return {
-            "message": "Chat session deleted successfully."
-        }
-
-    except Exception as exc:
-        await db.rollback()
-
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete chat session.",
-        ) from exc
+    return {
+        "message": "Chat session deleted successfully.",
+    }

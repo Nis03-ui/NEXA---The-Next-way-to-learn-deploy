@@ -3,9 +3,18 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import {
   ArrowUp,
+  BookOpen,
+  CalendarDays,
+  ClipboardList,
+  Code2,
+  FileText,
+  Lightbulb,
+  Loader2,
   Menu,
   Plus,
   Sparkles,
+  Upload,
+  Target,
   X,
 } from "lucide-react"
 
@@ -14,14 +23,17 @@ import ChatMessage from "@/components/tutor/ChatMessage"
 import ChatSidebar from "@/components/tutor/ChatSidebar"
 import NEXAAvatar from "@/components/tutor/NEXAAvatar"
 import SourceCard from "@/components/tutor/SourceCard"
-import TutorMode from "@/components/tutor/TutorMode"
+import TutorMode, {
+  type TutorMode as TutorModeType,
+} from "@/components/tutor/TutorMode"
 
 import {
   ai,
   type AISource,
   type ChatMessage as ApiChatMessage,
-  type TutorMode as ApiTutorMode,
 } from "@/lib/api"
+
+import { useAuth } from "@/providers/AuthProvider"
 
 type UIMessage = {
   id: number
@@ -29,14 +41,96 @@ type UIMessage = {
   content: string
 }
 
+type QuickAction = {
+  title: string
+  description: string
+  prompt: string
+  mode: TutorModeType
+  icon: typeof Sparkles
+}
+
+const STUDENT_ACTIONS: QuickAction[] = [
+  {
+    title: "Explain a concept",
+    description: "Break down a difficult topic simply.",
+    prompt:
+      "Explain polymorphism with a simple example and then test my understanding.",
+    mode: "explain",
+    icon: Lightbulb,
+  },
+  {
+    title: "Study step-by-step",
+    description: "Learn a topic through a structured lesson.",
+    prompt:
+      "Teach me computer networks step by step, starting from the fundamentals.",
+    mode: "study",
+    icon: BookOpen,
+  },
+  {
+    title: "Practice coding",
+    description: "Learn programming by solving problems.",
+    prompt:
+      "Teach me TypeScript generics with practical examples and then give me a coding exercise.",
+    mode: "code",
+    icon: Code2,
+  },
+  {
+    title: "Quiz me",
+    description: "Test your knowledge and identify gaps.",
+    prompt:
+      "Give me a short quiz on computer networks. Ask one question at a time and wait for my answer.",
+    mode: "quiz",
+    icon: ClipboardList,
+  },
+]
+
+const TEACHER_ACTIONS: QuickAction[] = [
+  {
+    title: "Create a lesson plan",
+    description: "Build a structured teaching session.",
+    prompt:
+      "Create a professional lesson plan for teaching Computer Networks, including objectives, topics, activities, and assessment.",
+    mode: "study",
+    icon: BookOpen,
+  },
+  {
+    title: "Plan an exam",
+    description: "Design a balanced examination.",
+    prompt:
+      "Help me create a balanced examination plan for Computer Networks with marks distribution, question types, and difficulty levels.",
+    mode: "quiz",
+    icon: CalendarDays,
+  },
+  {
+    title: "Generate questions",
+    description: "Create questions by topic and difficulty.",
+    prompt:
+      "Generate a set of Computer Networks questions across easy, medium, and difficult levels suitable for a university examination.",
+    mode: "quiz",
+    icon: ClipboardList,
+  },
+  {
+    title: "Explain a topic",
+    description: "Prepare a clear explanation for students.",
+    prompt:
+      "Prepare a clear university-level explanation of TCP and UDP that I can use while teaching students.",
+    mode: "explain",
+    icon: Lightbulb,
+  },
+]
+
 export default function TutorPage() {
+  const { user } = useAuth()
+
+  const isTeacher = user?.role === "TEACHER"
+
   const [messages, setMessages] = useState<UIMessage[]>([])
   const [input, setInput] = useState("")
   const [sessionId, setSessionId] = useState<number | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
 
   const [tutorMode, setTutorMode] =
-    useState<ApiTutorMode>("normal")
+    useState<TutorModeType>("normal")
 
   const [loading, setLoading] = useState(false)
   const [loadingSession, setLoadingSession] = useState(false)
@@ -45,19 +139,68 @@ export default function TutorPage() {
 
   const [sources, setSources] = useState<AISource[]>([])
 
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [uploadedNote, setUploadedNote] = useState<{
+    id: number
+    filename: string
+    title?: string
+    pages?: number
+  } | null>(null)
+
+  const [uploadingNote, setUploadingNote] = useState(false)
+
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const textareaRef =
+    useRef<HTMLTextAreaElement>(null)
+
+  const messagesEndRef =
+    useRef<HTMLDivElement>(null)
 
   const avatarState =
     loading
       ? "thinking"
-      : messages.some((message) => message.role === "assistant")
+      : messages.length > 0 &&
+          messages[messages.length - 1]?.role === "assistant"
         ? "responding"
         : "idle"
 
-  /*
-   * Auto-scroll whenever messages or loading state changes.
-   */
+  const quickActions = isTeacher
+    ? TEACHER_ACTIONS
+    : STUDENT_ACTIONS
+
+  const handleNoteUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0]
+
+    if (!file) return
+
+    if (file.type !== "application/pdf") {
+      window.alert("Please upload a PDF file.")
+      event.target.value = ""
+      return
+    }
+
+    setUploadingNote(true)
+
+    try {
+      const result = await ai.uploadDocument(file)
+
+      setUploadedNote({
+        id: result.id,
+        filename: result.filename ?? file.name,
+        title: result.title,
+        pages: result.pages,
+      })
+    } catch (error) {
+      console.error("NOTE UPLOAD ERROR:", error)
+      window.alert("Unable to upload this note. Please try again.")
+    } finally {
+      setUploadingNote(false)
+      event.target.value = ""
+    }
+  }
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({
       behavior: "smooth",
@@ -65,23 +208,19 @@ export default function TutorPage() {
     })
   }, [messages, loading])
 
-  /*
-   * Focus input when the page opens.
-   */
   useEffect(() => {
     textareaRef.current?.focus()
   }, [])
 
-  /*
-   * Load session from URL if present.
-   */
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const requestedSession = params.get("session")
+    const params = new URLSearchParams(
+      window.location.search,
+    )
 
-    if (!requestedSession) {
-      return
-    }
+    const requestedSession =
+      params.get("session")
+
+    if (!requestedSession) return
 
     const id = Number(requestedSession)
 
@@ -99,8 +238,11 @@ export default function TutorPage() {
 
         setMessages(
           session.messages.map(
-            (message: ApiChatMessage) => ({
-              id: message.id,
+            (
+              message: ApiChatMessage,
+              index,
+            ) => ({
+              id: index,
               role:
                 message.role === "user"
                   ? "user"
@@ -123,11 +265,10 @@ export default function TutorPage() {
     loadSession()
   }, [])
 
-  /*
-   * Keep URL synchronized with current session.
-   */
   useEffect(() => {
-    const url = new URL(window.location.href)
+    const url = new URL(
+      window.location.href,
+    )
 
     if (sessionId) {
       url.searchParams.set(
@@ -145,30 +286,36 @@ export default function TutorPage() {
     )
   }, [sessionId])
 
-  /*
-   * Auto-grow textarea.
-   */
   function resizeTextarea() {
     const textarea = textareaRef.current
 
-    if (!textarea) {
-      return
-    }
+    if (!textarea) return
 
     textarea.style.height = "auto"
+
     textarea.style.height =
-      `${Math.min(textarea.scrollHeight, 180)}px`
+      `${Math.min(
+        textarea.scrollHeight,
+        180,
+      )}px`
   }
 
-  /*
-   * Send message.
-   */
+  function selectQuickAction(
+    action: QuickAction,
+  ) {
+    setTutorMode(action.mode)
+    setInput(action.prompt)
+
+    setTimeout(() => {
+      textareaRef.current?.focus()
+      resizeTextarea()
+    }, 0)
+  }
+
   async function handleSend() {
     const message = input.trim()
 
-    if (!message || loading) {
-      return
-    }
+    if (!message || loading) return
 
     const temporaryId = Date.now()
 
@@ -188,7 +335,8 @@ export default function TutorPage() {
     setSources([])
 
     if (textareaRef.current) {
-      textareaRef.current.style.height = "auto"
+      textareaRef.current.style.height =
+        "auto"
     }
 
     try {
@@ -198,7 +346,13 @@ export default function TutorPage() {
         tutorMode,
       )
 
-      setSessionId(response.session_id)
+      if (
+        response.session_id !== undefined
+      ) {
+        setSessionId(
+          response.session_id,
+        )
+      }
 
       const assistantMessage: UIMessage = {
         id: temporaryId + 1,
@@ -211,13 +365,13 @@ export default function TutorPage() {
         assistantMessage,
       ])
 
-      setSources(response.sources ?? [])
+      setSources(
+        response.sources ?? [],
+      )
 
-      /*
-       * Refresh sidebar so the newly created
-       * conversation appears immediately.
-       */
-      setRefreshKey((value) => value + 1)
+      setRefreshKey(
+        (value) => value + 1,
+      )
     } catch (error) {
       const errorMessage =
         error instanceof Error
@@ -244,10 +398,6 @@ export default function TutorPage() {
     }
   }
 
-  /*
-   * Enter = send
-   * Shift + Enter = newline
-   */
   function handleKeyDown(
     event: React.KeyboardEvent<HTMLTextAreaElement>,
   ) {
@@ -260,9 +410,6 @@ export default function TutorPage() {
     }
   }
 
-  /*
-   * Start a new conversation.
-   */
   function handleNewChat() {
     setSessionId(null)
     setMessages([])
@@ -271,7 +418,10 @@ export default function TutorPage() {
     setTutorMode("normal")
     setMobileSidebarOpen(false)
 
-    const url = new URL(window.location.href)
+    const url = new URL(
+      window.location.href,
+    )
+
     url.searchParams.delete("session")
 
     window.history.replaceState(
@@ -285,9 +435,6 @@ export default function TutorPage() {
     }, 0)
   }
 
-  /*
-   * Select existing conversation.
-   */
   async function handleSelectSession(
     id: number,
   ) {
@@ -301,8 +448,11 @@ export default function TutorPage() {
 
       setMessages(
         session.messages.map(
-          (message: ApiChatMessage) => ({
-            id: message.id,
+          (
+            message: ApiChatMessage,
+            index,
+          ) => ({
+            id: index,
             role:
               message.role === "user"
                 ? "user"
@@ -325,57 +475,80 @@ export default function TutorPage() {
     }
   }
 
-  /*
-   * Remove duplicate RAG sources.
-   */
-  const uniqueSources = useMemo(() => {
-    const map = new Map<
-      string,
-      AISource
-    >()
+  const uniqueSources =
+    useMemo(() => {
+      const map =
+        new Map<string, AISource>()
 
-    for (const source of sources) {
-      const key =
-        `${source.content_id}-${source.chunk_index}`
+      for (const source of sources) {
+        const key = [
+          source.source_type,
+          source.content_id ?? "content",
+          source.document_id ?? "document",
+          source.title ?? "source",
+          source.chunk_index ??
+            source.chunk_index ?? "chunk"
+            
+        ].join("-")
 
-      if (!map.has(key)) {
-        map.set(key, source)
+        if (!map.has(key)) {
+          map.set(key, source)
+        }
       }
-    }
 
-    return Array.from(map.values())
-  }, [sources])
+      return Array.from(
+        map.values(),
+      )
+    }, [sources])
 
-  const isEmpty = messages.length === 0
+  const isEmpty =
+    messages.length === 0
+
+  const greeting = isTeacher
+    ? "What are you teaching today?"
+    : "What do you want to learn?"
+
+  const description = isTeacher
+    ? "Plan lessons, create assessments, explain topics, or work with your teaching material."
+    : "Ask questions, understand difficult concepts, solve problems, or study directly from your course material."
 
   return (
-    <AppShell allowedRoles={["STUDENT"]}>
-      <div className="mx-auto w-full max-w-[1600px]">
-        <div className="relative flex h-[calc(100vh-5rem)] min-h-[600px] w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm sm:rounded-3xl">
-
-          {/* ================================================= */}
-          {/* DESKTOP SIDEBAR */}
-          {/* ================================================= */}
+    <AppShell
+      allowedRoles={[
+        "STUDENT",
+        "TEACHER",
+      ]}
+    >
+      <div className="mx-auto h-full w-full max-w-[1600px]">
+        <div className="relative flex h-[calc(100dvh-8rem)] min-h-0 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm sm:rounded-3xl">
 
           <aside className="hidden w-64 shrink-0 border-r border-slate-200 bg-slate-50/60 lg:flex xl:w-72">
             <div className="min-h-0 flex-1">
               <ChatSidebar
-                currentSessionId={sessionId}
-                refreshKey={refreshKey}
-                onSelect={handleSelectSession}
-                onNew={handleNewChat}
+                currentSessionId={
+                  sessionId
+                }
+                refreshKey={
+                  refreshKey
+                }
+                onSelect={
+                  handleSelectSession
+                }
+                onNew={
+                  handleNewChat
+                }
               />
             </div>
           </aside>
 
-          {/* ================================================= */}
-          {/* MOBILE SIDEBAR OVERLAY */}
-          {/* ================================================= */}
-
           {mobileSidebarOpen && (
             <div
               className="absolute inset-0 z-40 bg-slate-950/20 backdrop-blur-[2px] lg:hidden"
-              onClick={() => setMobileSidebarOpen(false)}
+              onClick={() =>
+                setMobileSidebarOpen(
+                  false,
+                )
+              }
               aria-hidden="true"
             />
           )}
@@ -401,7 +574,9 @@ export default function TutorPage() {
               <button
                 type="button"
                 onClick={() =>
-                  setMobileSidebarOpen(false)
+                  setMobileSidebarOpen(
+                    false,
+                  )
                 }
                 className="grid h-10 w-10 place-items-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
                 aria-label="Close conversations"
@@ -412,23 +587,23 @@ export default function TutorPage() {
 
             <div className="min-h-0 flex-1">
               <ChatSidebar
-                currentSessionId={sessionId}
-                refreshKey={refreshKey}
-                onSelect={handleSelectSession}
-                onNew={handleNewChat}
+                currentSessionId={
+                  sessionId
+                }
+                refreshKey={
+                  refreshKey
+                }
+                onSelect={
+                  handleSelectSession
+                }
+                onNew={
+                  handleNewChat
+                }
               />
             </div>
           </aside>
 
-          {/* ================================================= */}
-          {/* MAIN TUTOR */}
-          {/* ================================================= */}
-
           <main className="relative flex min-w-0 flex-1 flex-col bg-white">
-
-            {/* ================================================= */}
-            {/* HEADER */}
-            {/* ================================================= */}
 
             <header className="flex h-16 shrink-0 items-center justify-between border-b border-slate-200 px-4 sm:px-6">
               <div className="flex min-w-0 items-center gap-3">
@@ -436,7 +611,9 @@ export default function TutorPage() {
                 <button
                   type="button"
                   onClick={() =>
-                    setMobileSidebarOpen(true)
+                    setMobileSidebarOpen(
+                      true,
+                    )
                   }
                   className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-slate-600 transition hover:bg-slate-100 hover:text-slate-950 lg:hidden"
                   aria-label="Open conversations"
@@ -455,8 +632,11 @@ export default function TutorPage() {
 
                   <div className="flex items-center gap-1.5">
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+
                     <span className="text-[11px] text-slate-500">
-                      AI learning assistant
+                      {isTeacher
+                        ? "Teaching assistant"
+                        : "AI learning assistant"}
                     </span>
                   </div>
                 </div>
@@ -464,108 +644,232 @@ export default function TutorPage() {
 
               <button
                 type="button"
-                onClick={handleNewChat}
+                onClick={
+                  handleNewChat
+                }
                 className="inline-flex h-9 shrink-0 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
               >
                 <Plus size={14} />
+
                 <span className="hidden sm:inline">
                   New chat
                 </span>
               </button>
             </header>
 
-            {/* ================================================= */}
-            {/* CHAT AREA */}
-            {/* ================================================= */}
-
             <div className="min-h-0 flex-1 overflow-y-auto">
               <div className="mx-auto flex min-h-full w-full max-w-4xl flex-col px-4 py-6 sm:px-6 sm:py-8">
 
-                {/* ================================================= */}
-                {/* EMPTY STATE */}
-                {/* ================================================= */}
+                {isEmpty &&
+                  !loadingSession && (
+                    <div className="flex flex-1 flex-col items-center justify-center py-10 text-center">
 
-                {isEmpty && !loadingSession && (
-                  <div className="flex flex-1 flex-col items-center justify-center py-10 text-center">
+                      <div className="mb-6">
+                        <NEXAAvatar
+                          state={
+                            avatarState
+                          }
+                        />
+                      </div>
 
-                    <div className="mb-6">
-                      <NEXAAvatar
-                        state={avatarState}
-                      />
-                    </div>
+                      <div className="max-w-xl">
+                        <div className="mb-2 flex items-center justify-center gap-2">
+                          {isTeacher ? (
+                            <Target
+                              size={14}
+                              className="text-blue-600"
+                            />
+                          ) : (
+                            <Sparkles
+                              size={14}
+                              className="text-blue-600"
+                            />
+                          )}
 
-                    <div className="max-w-xl">
-                      <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-blue-600">
-                        Meet NEXA
-                      </p>
-
-                      <h2 className="text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
-                        What do you want to learn?
-                      </h2>
-
-                      <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-slate-500 sm:text-base">
-                        Ask questions, understand difficult
-                        concepts, solve problems, or study
-                        directly from your course material.
-                      </p>
-                    </div>
-
-                    <div className="mt-8 grid w-full max-w-2xl gap-3 sm:grid-cols-2">
-                      {[
-                        {
-                          title: "Explain a concept",
-                          prompt:
-                            "Explain polymorphism with a simple example.",
-                        },
-                        {
-                          title: "Study my notes",
-                          prompt:
-                            "According to the notes, explain TCP and UDP.",
-                        },
-                        {
-                          title: "Practice coding",
-                          prompt:
-                            "Teach me TypeScript generics with an example.",
-                        },
-                        {
-                          title: "Test my knowledge",
-                          prompt:
-                            "Give me a short quiz on computer networks.",
-                        },
-                      ].map((suggestion) => (
-                        <button
-                          key={suggestion.title}
-                          type="button"
-                          onClick={() => {
-                            setInput(suggestion.prompt)
-
-                            setTimeout(() => {
-                              textareaRef.current?.focus()
-                            }, 0)
-                          }}
-                          className="group rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
-                        >
-                          <p className="text-sm font-semibold text-slate-900">
-                            {suggestion.title}
+                          <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-600">
+                            {isTeacher
+                              ? "NEXA Teaching Assistant"
+                              : "Meet NEXA"}
                           </p>
+                        </div>
 
-                          <p className="mt-1 text-xs leading-5 text-slate-500">
-                            {suggestion.prompt}
-                          </p>
-                        </button>
-                      ))}
+                        <h2 className="text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
+                          {greeting}
+                        </h2>
+
+                        <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-slate-500 sm:text-base">
+                          {description}
+                        </p>
+                      </div>
+
+                      <div className="mt-7 w-full max-w-2xl">
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="application/pdf"
+                          className="hidden"
+                          onChange={handleNoteUpload}
+                        />
+
+                        {!uploadedNote ? (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              fileInputRef.current?.click()
+                            }
+                            disabled={uploadingNote}
+                            className="group flex w-full items-center justify-between rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-4 text-left transition hover:border-blue-300 hover:bg-blue-50/40 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="grid h-10 w-10 place-items-center rounded-xl bg-white text-blue-600 shadow-sm ring-1 ring-slate-200">
+                                {uploadingNote ? (
+                                  <Loader2
+                                    size={18}
+                                    className="animate-spin"
+                                  />
+                                ) : (
+                                  <Upload size={18} />
+                                )}
+                              </div>
+
+                              <div>
+                                <p className="text-sm font-bold text-slate-900">
+                                  {uploadingNote
+                                    ? "Indexing your note..."
+                                    : "Study from your notes"}
+                                </p>
+
+                                <p className="mt-0.5 text-xs text-slate-500">
+                                  Upload a PDF and let NEXA learn from it.
+                                </p>
+                              </div>
+                            </div>
+
+                            <FileText
+                              size={18}
+                              className="text-slate-400 transition group-hover:text-blue-500"
+                            />
+                          </button>
+                        ) : (
+                          <div className="rounded-2xl border border-blue-100 bg-blue-50/50 p-4">
+                            <div className="flex items-start gap-3">
+                              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white text-blue-600 shadow-sm">
+                                <FileText size={18} />
+                              </div>
+
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm font-bold text-slate-900">
+                                  {uploadedNote.title ||
+                                    uploadedNote.filename}
+                                </p>
+
+                                <p className="mt-1 truncate text-xs text-slate-500">
+                                  {uploadedNote.filename}
+                                  {uploadedNote.pages
+                                    ? ` · ${uploadedNote.pages} pages`
+                                    : ""}
+                                </p>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setTutorMode("study")
+
+                                    const prompt =
+                                      `Study this note with me: ${
+                                        uploadedNote.title ||
+                                        uploadedNote.filename
+                                      }. Explain the key concepts step by step, use the uploaded material as the primary source, and quiz me at the end.`
+
+                                    setInput(prompt)
+
+                                    requestAnimationFrame(() => {
+                                      textareaRef.current?.focus()
+                                      resizeTextarea()
+                                    })
+                                  }}
+                                  className="mt-3 inline-flex items-center gap-2 rounded-xl bg-slate-950 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-800"
+                                >
+                                  <BookOpen size={14} />
+                                  Study this note
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="mt-8 grid w-full max-w-2xl gap-3 sm:grid-cols-2">
+                        {quickActions.map(
+                          (action) => {
+                            const Icon =
+                              action.icon
+
+                            return (
+                              <button
+                                key={
+                                  action.title
+                                }
+                                type="button"
+                                onClick={() =>
+                                  selectQuickAction(
+                                    action,
+                                  )
+                                }
+                                className="group rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
+                              >
+                                <div className="flex items-start gap-3">
+                                  <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-slate-100 text-slate-600 transition group-hover:bg-blue-50 group-hover:text-blue-600">
+                                    <Icon
+                                      size={
+                                        16
+                                      }
+                                    />
+                                  </div>
+
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-semibold text-slate-900">
+                                      {
+                                        action.title
+                                      }
+                                    </p>
+
+                                    <p className="mt-1 text-xs leading-5 text-slate-500">
+                                      {
+                                        action.description
+                                      }
+                                    </p>
+                                  </div>
+                                </div>
+                              </button>
+                            )
+                          },
+                        )}
+                      </div>
+
+                      {!isTeacher && (
+                        <div className="mt-6 flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-[10px] text-slate-500">
+                          <FileText
+                            size={12}
+                          />
+                          <span>
+                            You can upload your
+                            study PDF and ask
+                            NEXA questions about
+                            it.
+                          </span>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                )}
-
-                {/* ================================================= */}
-                {/* LOADING SESSION */}
-                {/* ================================================= */}
+                  )}
 
                 {loadingSession && (
                   <div className="flex flex-1 items-center justify-center">
                     <div className="flex flex-col items-center gap-4">
-                      <NEXAAvatar state="thinking" compact />
+                      <NEXAAvatar
+                        state="thinking"
+                        compact
+                      />
 
                       <div className="text-center">
                         <p className="text-sm font-semibold text-slate-800">
@@ -573,102 +877,122 @@ export default function TutorPage() {
                         </p>
 
                         <p className="mt-1 text-xs text-slate-500">
-                          NEXA is getting things ready...
+                          NEXA is getting things
+                          ready...
                         </p>
                       </div>
                     </div>
                   </div>
                 )}
 
-                {/* ================================================= */}
-                {/* MESSAGES */}
-                {/* ================================================= */}
+                {!loadingSession &&
+                  !isEmpty && (
+                    <div className="space-y-6">
+                      {messages.map(
+                        (message) => (
+                          <ChatMessage
+                            key={
+                              message.id
+                            }
+                            role={
+                              message.role
+                            }
+                            content={
+                              message.content
+                            }
+                          />
+                        ),
+                      )}
 
-                {!loadingSession && !isEmpty && (
-                  <div className="space-y-6">
-                    {messages.map((message) => (
-                      <ChatMessage
-                        key={message.id}
-                        role={message.role}
-                        content={message.content}
-                      />
-                    ))}
+                      {loading && (
+                        <div className="flex w-full justify-start">
+                          <div className="flex max-w-[92%] items-start gap-3 sm:max-w-[82%]">
+                            <div className="shrink-0">
+                              <NEXAAvatar
+                                state="thinking"
+                                compact
+                              />
+                            </div>
 
-                    {/* ================================================= */}
-                    {/* THINKING */}
-                    {/* ================================================= */}
+                            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3.5 shadow-sm">
+                              <div className="flex items-center gap-1.5">
+                                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.3s]" />
+                                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.15s]" />
+                                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" />
 
-                    {loading && (
-                      <div className="flex w-full justify-start">
-                        <div className="flex max-w-[92%] items-start gap-3 sm:max-w-[82%]">
-                          <div className="shrink-0">
-                            <NEXAAvatar
-                              state="thinking"
-                              compact
-                            />
-                          </div>
-
-                          <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3.5 shadow-sm">
-                            <div className="flex items-center gap-1.5">
-                              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.3s]" />
-                              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.15s]" />
-                              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" />
-                              <span className="ml-2 text-xs text-slate-400">
-                                NEXA is thinking...
-                              </span>
+                                <span className="ml-2 text-xs text-slate-400">
+                                  NEXA is thinking...
+                                </span>
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {/* ================================================= */}
-                    {/* SOURCES */}
-                    {/* ================================================= */}
+                      {!loading &&
+                        uniqueSources.length >
+                          0 && (
+                          <section className="pt-2">
+                            <div className="mb-3 flex items-center gap-2">
+                              <div className="h-px flex-1 bg-slate-200" />
 
-                    {!loading && uniqueSources.length > 0 && (
-                      <section className="pt-2">
-                        <div className="mb-3 flex items-center gap-2">
-                          <div className="h-px flex-1 bg-slate-200" />
+                              <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
+                                Sources
+                              </span>
 
-                          <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
-                            Sources
-                          </span>
+                              <div className="h-px flex-1 bg-slate-200" />
+                            </div>
 
-                          <div className="h-px flex-1 bg-slate-200" />
-                        </div>
+                            <div className="grid gap-2 sm:grid-cols-2">
+                              {uniqueSources.map(
+                                (
+                                  source,
+                                  index,
+                                ) => (
+                                  <SourceCard
+                                    key={`${source.source_type}-${source.content_id ?? source.document_id ?? index}-${source.chunk_index}`}
+                                    title={
+                                      source.title ??
+                                      source.filename ??
+                                      "Study source"
+                                    }
+                                    subject={
+                                      source.subject ??
+                                      (source.source_type ===
+                                      "student_document"
+                                        ? "My study material"
+                                        : "Course material")
+                                    }
+                                    chunkIndex={
+                                      source.chunk_index
+                                    }
+                                  />
+                                ),
+                              )}
+                            </div>
+                          </section>
+                        )}
 
-                        <div className="grid gap-2 sm:grid-cols-2">
-                          {uniqueSources.map((source) => (
-                            <SourceCard
-                              key={`${source.content_id}-${source.chunk_index}`}
-                              title={source.title}
-                              subject={source.subject}
-                            />
-                          ))}
-                        </div>
-                      </section>
-                    )}
-
-                    <div ref={messagesEndRef} />
-                  </div>
-                )}
+                      <div
+                        ref={
+                          messagesEndRef
+                        }
+                      />
+                    </div>
+                  )}
               </div>
             </div>
-
-            {/* ================================================= */}
-            {/* COMPOSER */}
-            {/* ================================================= */}
 
             <div className="shrink-0 border-t border-slate-200 bg-white px-4 pb-4 pt-3 sm:px-6 sm:pb-6">
               <div className="mx-auto w-full max-w-4xl">
 
                 <div className="mb-3">
-                   <TutorMode
-  mode={tutorMode}
-  onChange={setTutorMode}
-/>
-
+                  <TutorMode
+                    mode={tutorMode}
+                    onChange={
+                      setTutorMode
+                    }
+                  />
                 </div>
 
                 <form
@@ -679,14 +1003,25 @@ export default function TutorPage() {
                   className="relative rounded-2xl border border-slate-300 bg-white shadow-sm transition focus-within:border-slate-400 focus-within:shadow-md"
                 >
                   <textarea
-                    ref={textareaRef}
+                    ref={
+                      textareaRef
+                    }
                     value={input}
                     onChange={(event) => {
-                      setInput(event.target.value)
+                      setInput(
+                        event.target
+                          .value,
+                      )
                       resizeTextarea()
                     }}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Ask NEXA anything..."
+                    onKeyDown={
+                      handleKeyDown
+                    }
+                    placeholder={
+                      isTeacher
+                        ? "Ask NEXA to plan, create, explain, or prepare..."
+                        : "Ask NEXA anything..."
+                    }
                     rows={1}
                     disabled={loading}
                     className="block max-h-[180px] min-h-[56px] w-full resize-none bg-transparent px-4 pb-14 pt-4 pr-14 text-sm leading-6 text-slate-900 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-60"
@@ -695,8 +1030,10 @@ export default function TutorPage() {
 
                   <div className="absolute bottom-2.5 left-3 text-[10px] text-slate-400">
                     <span className="hidden sm:inline">
-                      Enter to send · Shift + Enter for new line
+                      Enter to send · Shift +
+                      Enter for new line
                     </span>
+
                     <span className="sm:hidden">
                       Enter to send
                     </span>
@@ -704,7 +1041,10 @@ export default function TutorPage() {
 
                   <button
                     type="submit"
-                    disabled={!input.trim() || loading}
+                    disabled={
+                      !input.trim() ||
+                      loading
+                    }
                     className="absolute bottom-2.5 right-2.5 grid h-10 w-10 place-items-center rounded-xl bg-slate-950 text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
                     aria-label="Send message"
                   >
@@ -713,7 +1053,8 @@ export default function TutorPage() {
                 </form>
 
                 <p className="mt-2 text-center text-[10px] text-slate-400">
-                  NEXA can make mistakes. Verify important information.
+                  NEXA can make mistakes.
+                  Verify important information.
                 </p>
               </div>
             </div>

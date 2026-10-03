@@ -165,6 +165,7 @@ Teaching principles:
         conversation: str = "",
         db: AsyncSession | None = None,
         mode: str = "normal",
+        user_id: int | None = None,
     ) -> AgentResult:
         """Generate an educational response using Gemini."""
 

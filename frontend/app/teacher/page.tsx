@@ -1,123 +1,127 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { FormEvent, useEffect, useMemo, useState } from "react"
+import Link from "next/link"
 import {
   BookOpen,
   Check,
   Edit3,
-  FileText,
   Loader2,
   Plus,
   Search,
   Trash2,
   X,
 } from "lucide-react"
-import AppShell from "@/components/layout/AppShell"
-import {
-  teacher,
-  type Content,
-  type ContentCreate,
-} from "@/lib/api"
 
-type FormState = {
+import AppShell from "@/components/layout/AppShell"
+import { courses, type Course } from "@/lib/lms"
+
+type CourseForm = {
   title: string
-  description: string
   subject: string
-  body: string
+  description: string
   published: boolean
 }
 
-const emptyForm: FormState = {
+const emptyForm: CourseForm = {
   title: "",
-  description: "",
   subject: "",
-  body: "",
+  description: "",
   published: false,
 }
 
 export default function TeacherPage() {
-  const [content, setContent] = useState<Content[]>([])
+  const [courseList, setCourseList] = useState<Course[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [deletingId, setDeletingId] = useState<number | null>(null)
-
-  const [formOpen, setFormOpen] = useState(false)
-  const [editingId, setEditingId] = useState<number | null>(null)
-  const [form, setForm] = useState<FormState>(emptyForm)
+  const [actionId, setActionId] = useState<number | null>(null)
 
   const [search, setSearch] = useState("")
-  const [subjectFilter, setSubjectFilter] = useState("all")
+  const [showForm, setShowForm] = useState(false)
+  const [editingCourse, setEditingCourse] = useState<Course | null>(null)
 
+  const [form, setForm] = useState<CourseForm>(emptyForm)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
 
-  useEffect(() => {
-    loadContent()
-  }, [])
-
-  async function loadContent() {
+  async function loadCourses() {
     try {
       setLoading(true)
       setError("")
 
-      const data = await teacher.getContent()
-      setContent(data)
-    } catch (error) {
+      const data = await courses.mine()
+      setCourseList(data)
+    } catch (err) {
       setError(
-        error instanceof Error
-          ? error.message
-          : "Unable to load teaching content.",
+        err instanceof Error
+          ? err.message
+          : "Failed to load courses.",
       )
     } finally {
       setLoading(false)
     }
   }
 
+  useEffect(() => {
+    loadCourses()
+  }, [])
+
+  const filteredCourses = useMemo(() => {
+    const query = search.trim().toLowerCase()
+
+    if (!query) return courseList
+
+    return courseList.filter(
+      (course) =>
+        course.title.toLowerCase().includes(query) ||
+        course.subject.toLowerCase().includes(query) ||
+        (course.description ?? "")
+          .toLowerCase()
+          .includes(query),
+    )
+  }, [courseList, search])
+
   function openCreate() {
-    setEditingId(null)
+    setEditingCourse(null)
     setForm(emptyForm)
-    setFormOpen(true)
     setError("")
     setSuccess("")
+    setShowForm(true)
   }
 
-  function openEdit(item: Content) {
-    setEditingId(item.id)
+  function openEdit(course: Course) {
+    setEditingCourse(course)
 
     setForm({
-      title: item.title,
-      description: item.description ?? "",
-      subject: item.subject,
-      body: item.body,
-      published: item.published,
+      title: course.title,
+      subject: course.subject,
+      description: course.description ?? "",
+      published: course.published,
     })
 
-    setFormOpen(true)
     setError("")
     setSuccess("")
+    setShowForm(true)
   }
 
   function closeForm() {
     if (saving) return
 
-    setFormOpen(false)
-    setEditingId(null)
+    setShowForm(false)
+    setEditingCourse(null)
     setForm(emptyForm)
   }
 
-  async function handleSubmit(
-    event: React.FormEvent<HTMLFormElement>,
-  ) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    if (
-      !form.title.trim() ||
-      !form.subject.trim() ||
-      !form.body.trim()
-    ) {
-      setError(
-        "Title, subject, and content are required.",
-      )
+    if (!form.title.trim()) {
+      setError("Course title is required.")
+      return
+    }
+
+    if (!form.subject.trim()) {
+      setError("Subject is required.")
       return
     }
 
@@ -126,735 +130,469 @@ export default function TeacherPage() {
       setError("")
       setSuccess("")
 
-      const payload: ContentCreate = {
-        title: form.title.trim(),
-        description:
-          form.description.trim() || null,
-        subject: form.subject.trim(),
-        body: form.body.trim(),
-        published: form.published,
-      }
+      if (editingCourse) {
+        const updated = await courses.update(
+          editingCourse.id,
+          {
+            title: form.title.trim(),
+            subject: form.subject.trim(),
+            description: form.description.trim() || undefined,
+            published: form.published,
+          },
+        )
 
-      if (editingId !== null) {
-        const updated =
-          await teacher.updateContent(
-            editingId,
-            payload,
-          )
-
-        setContent((current) =>
-          current.map((item) =>
-            item.id === editingId
+        setCourseList((current) =>
+          current.map((course) =>
+            course.id === updated.id
               ? updated
-              : item,
+              : course,
           ),
         )
 
-        setSuccess(
-          "Content updated successfully.",
-        )
+        setSuccess("Course updated successfully.")
       } else {
-        const created =
-          await teacher.createContent(payload)
+        const created = await courses.create({
+          title: form.title.trim(),
+          subject: form.subject.trim(),
+          description: form.description.trim() || undefined,
+          published: form.published,
+        })
 
-        setContent((current) => [
+        setCourseList((current) => [
           created,
           ...current,
         ])
 
-        setSuccess(
-          "Content created successfully.",
-        )
+        setSuccess("Course created successfully.")
       }
 
-      setFormOpen(false)
-      setEditingId(null)
       setForm(emptyForm)
-    } catch (error) {
+      setEditingCourse(null)
+
+      setTimeout(() => {
+        setShowForm(false)
+      }, 700)
+    } catch (err) {
       setError(
-        error instanceof Error
-          ? error.message
-          : "Unable to save this content.",
+        err instanceof Error
+          ? err.message
+          : "Failed to save course.",
       )
     } finally {
       setSaving(false)
     }
   }
 
-  async function handleDelete(id: number) {
-    const item = content.find(
-      (contentItem) =>
-        contentItem.id === id,
-    )
-
-    if (!item) return
-
-    const confirmed = window.confirm(
-      `Delete "${item.title}"?\n\nThis action cannot be undone.`,
-    )
-
-    if (!confirmed) return
-
+  async function handlePublish(course: Course) {
     try {
-      setDeletingId(id)
+      setActionId(course.id)
       setError("")
       setSuccess("")
 
-      await teacher.deleteContent(id)
+      const updated = await courses.publish(course.id)
 
-      setContent((current) =>
-        current.filter(
-          (item) => item.id !== id,
-        ),
-      )
-
-      setSuccess(
-        "Content deleted successfully.",
-      )
-    } catch (error) {
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Unable to delete this content.",
-      )
-    } finally {
-      setDeletingId(null)
-    }
-  }
-
-  async function togglePublished(
-    item: Content,
-  ) {
-    try {
-      setError("")
-      setSuccess("")
-
-      const updated =
-        await teacher.updateContent(
-          item.id,
-          {
-            published: !item.published,
-          },
-        )
-
-      setContent((current) =>
-        current.map((contentItem) =>
-          contentItem.id === item.id
+      setCourseList((current) =>
+        current.map((item) =>
+          item.id === updated.id
             ? updated
-            : contentItem,
+            : item,
         ),
       )
 
       setSuccess(
         updated.published
-          ? "Content published and available to NEXA."
-          : "Content unpublished.",
+          ? "Course published."
+          : "Course unpublished.",
       )
-    } catch (error) {
+    } catch (err) {
       setError(
-        error instanceof Error
-          ? error.message
-          : "Unable to update publishing status.",
+        err instanceof Error
+          ? err.message
+          : "Failed to update course.",
       )
+    } finally {
+      setActionId(null)
     }
   }
 
-  const subjects = useMemo(() => {
-    return Array.from(
-      new Set(
-        content.map(
-          (item) => item.subject,
+  async function handleDelete(course: Course) {
+    const confirmed = window.confirm(
+      `Delete "${course.title}"? This may also remove its course content.`,
+    )
+
+    if (!confirmed) return
+
+    try {
+      setActionId(course.id)
+      setError("")
+      setSuccess("")
+
+      await courses.delete(course.id)
+
+      setCourseList((current) =>
+        current.filter(
+          (item) => item.id !== course.id,
         ),
-      ),
-    ).sort()
-  }, [content])
-
-  const filteredContent = useMemo(() => {
-    const query =
-      search.trim().toLowerCase()
-
-    return content.filter((item) => {
-      const matchesSearch =
-        !query ||
-        item.title
-          .toLowerCase()
-          .includes(query) ||
-        item.subject
-          .toLowerCase()
-          .includes(query) ||
-        item.body
-          .toLowerCase()
-          .includes(query)
-
-      const matchesSubject =
-        subjectFilter === "all" ||
-        item.subject === subjectFilter
-
-      return (
-        matchesSearch &&
-        matchesSubject
       )
-    })
-  }, [
-    content,
-    search,
-    subjectFilter,
-  ])
 
-  const publishedCount =
-    content.filter(
-      (item) => item.published,
-    ).length
+      setSuccess("Course deleted.")
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to delete course.",
+      )
+    } finally {
+      setActionId(null)
+    }
+  }
 
   return (
-    <AppShell
-      allowedRoles={[
-        "TEACHER",
-        "ADMIN",
-      ]}
-    >
-      <div className="mx-auto max-w-7xl space-y-8">
-        {/* Header */}
-        <section className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
-          <div>
-            <p className="text-sm font-medium text-blue-600">
-              Teacher workspace
-            </p>
+    <AppShell allowedRoles={["TEACHER", "ADMIN"]}>
+      <div className="mx-auto max-w-7xl space-y-6 sm:space-y-8">
+        <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-blue-600">
+                Teacher LMS
+              </p>
 
-            <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
-              Knowledge Base
-            </h1>
+              <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-950 sm:text-4xl">
+                Course Management
+              </h1>
 
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-              Create and manage learning material that NEXA can use
-              when helping students.
-            </p>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
+                Create and manage your courses, then add
+                materials, assignments, quizzes, and schedules.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={openCreate}
+              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white transition hover:bg-slate-800 sm:w-auto"
+            >
+              <Plus className="h-4 w-4" />
+              Create Course
+            </button>
           </div>
-
-          <button
-            type="button"
-            onClick={openCreate}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white transition hover:bg-slate-800"
-          >
-            <Plus size={17} />
-            Create content
-          </button>
         </section>
 
-        {/* Alerts */}
         {error && (
-          <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            <X
-              size={17}
-              className="mt-0.5 shrink-0"
-            />
-
-            <span>{error}</span>
+          <div
+            role="alert"
+            className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+          >
+            {error}
           </div>
         )}
 
         {success && (
-          <div className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-            <Check
-              size={17}
-              className="mt-0.5 shrink-0"
-            />
-
-            <span>{success}</span>
+          <div
+            aria-live="polite"
+            className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700"
+          >
+            {success}
           </div>
         )}
 
-        {/* Stats */}
-        <section className="grid gap-4 sm:grid-cols-3">
-          <StatCard
-            icon={<FileText size={18} />}
-            label="Total content"
-            value={content.length}
-          />
+        <section className="space-y-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-slate-950">
+                My Courses
+              </h2>
 
-          <StatCard
-            icon={<Check size={18} />}
-            label="Published"
-            value={publishedCount}
-          />
+              <p className="mt-1 text-sm text-slate-500">
+                {courseList.length} course
+                {courseList.length === 1 ? "" : "s"}
+              </p>
+            </div>
 
-          <StatCard
-            icon={<BookOpen size={18} />}
-            label="Subjects"
-            value={subjects.length}
-          />
-        </section>
+            <div className="relative w-full sm:max-w-sm">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
 
-        {/* Content */}
-        <section className="nexa-card overflow-hidden">
-          <div className="border-b border-slate-200 p-5">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <h2 className="text-base font-bold text-slate-950">
-                  Learning material
-                </h2>
-
-                <p className="mt-1 text-xs text-slate-500">
-                  Published material becomes available to NEXA&apos;s
-                  knowledge agent.
-                </p>
-              </div>
-
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <div className="flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 sm:w-64">
-                  <Search
-                    size={15}
-                    className="shrink-0 text-slate-400"
-                  />
-
-                  <input
-                    value={search}
-                    onChange={(event) =>
-                      setSearch(
-                        event.target.value,
-                      )
-                    }
-                    placeholder="Search content..."
-                    className="min-w-0 flex-1 bg-transparent text-xs text-slate-900 outline-none placeholder:text-slate-400"
-                  />
-                </div>
-
-                <select
-                  value={subjectFilter}
-                  onChange={(event) =>
-                    setSubjectFilter(
-                      event.target.value,
-                    )
-                  }
-                  className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
-                >
-                  <option value="all">
-                    All subjects
-                  </option>
-
-                  {subjects.map(
-                    (subject) => (
-                      <option
-                        key={subject}
-                        value={subject}
-                      >
-                        {subject}
-                      </option>
-                    ),
-                  )}
-                </select>
-              </div>
+              <input
+                value={search}
+                onChange={(event) =>
+                  setSearch(event.target.value)
+                }
+                placeholder="Search courses..."
+                className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 text-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
+              />
             </div>
           </div>
 
           {loading ? (
-            <div className="space-y-3 p-6">
-              {[1, 2, 3].map(
-                (item) => (
-                  <div
-                    key={item}
-                    className="h-24 animate-pulse rounded-2xl bg-slate-100"
-                  />
-                ),
-              )}
+            <div className="flex min-h-52 items-center justify-center rounded-3xl border border-slate-200 bg-white">
+              <Loader2 className="h-7 w-7 animate-spin text-slate-400" />
             </div>
-          ) : filteredContent.length === 0 ? (
-            <div className="px-6 py-20 text-center">
-              <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-slate-100 text-slate-400">
-                <FileText size={21} />
-              </div>
+          ) : filteredCourses.length === 0 ? (
+            <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-8 text-center sm:p-12">
+              <BookOpen className="mx-auto h-10 w-10 text-slate-300" />
 
-              <h3 className="mt-4 text-sm font-bold text-slate-900">
-                {content.length === 0
-                  ? "No content yet"
-                  : "No matching content"}
+              <h3 className="mt-4 font-semibold text-slate-950">
+                {search
+                  ? "No courses found"
+                  : "No courses yet"}
               </h3>
 
-              <p className="mx-auto mt-1 max-w-sm text-xs leading-5 text-slate-500">
-                {content.length === 0
-                  ? "Create your first learning resource to start building NEXA's knowledge base."
-                  : "Try changing your search or subject filter."}
+              <p className="mt-2 text-sm text-slate-500">
+                {search
+                  ? "Try another search."
+                  : "Create your first course to start building your LMS."}
               </p>
 
-              {content.length === 0 && (
+              {!search && (
                 <button
                   type="button"
                   onClick={openCreate}
-                  className="mt-5 inline-flex h-10 items-center gap-2 rounded-xl bg-slate-950 px-4 text-xs font-semibold text-white hover:bg-slate-800"
+                  className="mt-5 min-h-11 rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white"
                 >
-                  <Plus size={15} />
-                  Create content
+                  Create Course
                 </button>
               )}
             </div>
           ) : (
-            <div className="divide-y divide-slate-100">
-              {filteredContent.map(
-                (item) => (
-                  <ContentRow
-                    key={item.id}
-                    item={item}
-                    deleting={
-                      deletingId === item.id
-                    }
-                    onEdit={() =>
-                      openEdit(item)
-                    }
-                    onDelete={() =>
-                      handleDelete(item.id)
-                    }
-                    onTogglePublished={() =>
-                      togglePublished(item)
-                    }
-                  />
-                ),
-              )}
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {filteredCourses.map((course) => (
+                <article
+                  key={course.id}
+                  className="flex min-w-0 flex-col rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <span className="inline-flex max-w-full truncate rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+                        {course.subject}
+                      </span>
+
+                      <h3 className="mt-4 break-words text-lg font-bold text-slate-950">
+                        {course.title}
+                      </h3>
+                    </div>
+
+                    <span
+                      className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${
+                        course.published
+                          ? "bg-emerald-50 text-emerald-700"
+                          : "bg-amber-50 text-amber-700"
+                      }`}
+                    >
+                      {course.published
+                        ? "Published"
+                        : "Draft"}
+                    </span>
+                  </div>
+
+                  <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-600">
+                    {course.description ||
+                      "No course description yet."}
+                  </p>
+
+                  <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <Link
+                      href={`/teacher/courses/${course.id}`}
+                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800 sm:col-span-2"
+                    >
+                      <BookOpen className="h-4 w-4" />
+                      Open Course
+                    </Link>
+
+                    <button
+                      type="button"
+                      onClick={() => openEdit(course)}
+                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                    >
+                      <Edit3 className="h-4 w-4" />
+                      Edit
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={actionId === course.id}
+                      onClick={() =>
+                        handlePublish(course)
+                      }
+                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"
+                    >
+                      {actionId === course.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : course.published ? (
+                        <>
+                          <X className="h-4 w-4" />
+                          Unpublish
+                        </>
+                      ) : (
+                        <>
+                          <Check className="h-4 w-4" />
+                          Publish
+                        </>
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleDelete(course)
+                      }
+                      disabled={actionId === course.id}
+                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-red-200 px-4 text-sm font-semibold text-red-600 transition hover:bg-red-50 sm:col-span-2"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Delete Course
+                    </button>
+                  </div>
+                </article>
+              ))}
             </div>
           )}
         </section>
-      </div>
 
-      {/* Modal */}
-      {formOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/30 p-4 backdrop-blur-sm">
-          <div className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5">
-              <div>
-                <h2 className="text-lg font-bold text-slate-950">
-                  {editingId !== null
-                    ? "Edit content"
-                    : "Create content"}
-                </h2>
+        {showForm && (
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/40 p-0 sm:items-center sm:p-6">
+            <div className="max-h-[92vh] w-full overflow-y-auto rounded-t-3xl bg-white p-5 shadow-2xl sm:max-w-2xl sm:rounded-3xl sm:p-7">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-sm font-semibold text-blue-600">
+                    Teacher LMS
+                  </p>
 
-                <p className="mt-1 text-xs text-slate-500">
-                  Add clear course material for students and NEXA.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={closeForm}
-                className="grid h-9 w-9 place-items-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-                aria-label="Close"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <form
-              onSubmit={handleSubmit}
-              className="min-h-0 overflow-y-auto"
-            >
-              <div className="space-y-5 p-6">
-                <div className="grid gap-5 sm:grid-cols-[1fr_220px]">
-                  <Field
-                    label="Title"
-                    required
-                  >
-                    <input
-                      value={form.title}
-                      onChange={(event) =>
-                        setForm(
-                          (current) => ({
-                            ...current,
-                            title:
-                              event.target
-                                .value,
-                          }),
-                        )
-                      }
-                      maxLength={200}
-                      placeholder="e.g. TCP vs UDP"
-                      className={inputClass}
-                    />
-                  </Field>
-
-                  <Field
-                    label="Subject"
-                    required
-                  >
-                    <input
-                      value={form.subject}
-                      onChange={(event) =>
-                        setForm(
-                          (current) => ({
-                            ...current,
-                            subject:
-                              event.target
-                                .value,
-                          }),
-                        )
-                      }
-                      maxLength={100}
-                      placeholder="e.g. DCN"
-                      className={inputClass}
-                    />
-                  </Field>
+                  <h2 className="mt-1 text-xl font-bold text-slate-950 sm:text-2xl">
+                    {editingCourse
+                      ? "Edit Course"
+                      : "Create Course"}
+                  </h2>
                 </div>
 
-                <Field label="Description">
-                  <textarea
-                    value={form.description}
-                    onChange={(event) =>
-                      setForm(
-                        (current) => ({
-                          ...current,
-                          description:
-                            event.target
-                              .value,
-                        }),
-                      )
-                    }
-                    maxLength={500}
-                    rows={3}
-                    placeholder="Short description of this learning resource..."
-                    className={`${inputClass} resize-none`}
-                  />
-                </Field>
-
-                <Field
-                  label="Content"
-                  required
-                >
-                  <textarea
-                    value={form.body}
-                    onChange={(event) =>
-                      setForm(
-                        (current) => ({
-                          ...current,
-                          body:
-                            event.target
-                              .value,
-                        }),
-                      )
-                    }
-                    rows={14}
-                    placeholder="Write the learning material here..."
-                    className={`${inputClass} resize-y`}
-                  />
-                </Field>
-
-                <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <input
-                    type="checkbox"
-                    checked={form.published}
-                    onChange={(event) =>
-                      setForm(
-                        (current) => ({
-                          ...current,
-                          published:
-                            event.target
-                              .checked,
-                        }),
-                      )
-                    }
-                    className="h-4 w-4 accent-blue-600"
-                  />
-
-                  <span>
-                    <span className="block text-sm font-semibold text-slate-900">
-                      Publish immediately
-                    </span>
-
-                    <span className="mt-1 block text-xs leading-5 text-slate-500">
-                      Published material can be retrieved by
-                      NEXA&apos;s knowledge agent.
-                    </span>
-                  </span>
-                </label>
-              </div>
-
-              <div className="flex justify-end gap-3 border-t border-slate-200 bg-slate-50 px-6 py-4">
                 <button
                   type="button"
                   onClick={closeForm}
                   disabled={saving}
-                  className="h-10 rounded-xl border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                  aria-label="Close"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100"
                 >
-                  Cancel
-                </button>
-
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="inline-flex h-10 items-center gap-2 rounded-xl bg-slate-950 px-5 text-xs font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {saving && (
-                    <Loader2
-                      size={14}
-                      className="animate-spin"
-                    />
-                  )}
-
-                  {editingId !== null
-                    ? "Save changes"
-                    : "Create content"}
+                  <X className="h-5 w-5" />
                 </button>
               </div>
-            </form>
+
+              <form
+                onSubmit={handleSubmit}
+                className="mt-6 space-y-5"
+              >
+                <div>
+                  <label className="text-sm font-semibold text-slate-800">
+                    Course title
+                  </label>
+
+                  <input
+                    value={form.title}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        title: event.target.value,
+                      }))
+                    }
+                    placeholder="e.g. Full Stack Web Development"
+                    className="mt-2 h-12 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-semibold text-slate-800">
+                    Subject
+                  </label>
+
+                  <input
+                    value={form.subject}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        subject: event.target.value,
+                      }))
+                    }
+                    placeholder="e.g. Web Development"
+                    className="mt-2 h-12 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-semibold text-slate-800">
+                    Description
+                  </label>
+
+                  <textarea
+                    value={form.description}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        description: event.target.value,
+                      }))
+                    }
+                    rows={5}
+                    placeholder="Describe what students will learn..."
+                    className="mt-2 w-full resize-y rounded-xl border border-slate-200 p-4 text-sm leading-6 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
+                  />
+                </div>
+
+                <label className="flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border border-slate-200 p-4">
+                  <input
+                    type="checkbox"
+                    checked={form.published}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        published: event.target.checked,
+                      }))
+                    }
+                    className="h-4 w-4"
+                  />
+
+                  <span>
+                    <span className="block text-sm font-semibold text-slate-800">
+                      Publish immediately
+                    </span>
+
+                    <span className="mt-1 block text-xs text-slate-500">
+                      Students can discover published courses.
+                    </span>
+                  </span>
+                </label>
+
+                {error && (
+                  <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                    {error}
+                  </div>
+                )}
+
+                <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                  <button
+                    type="button"
+                    onClick={closeForm}
+                    disabled={saving}
+                    className="min-h-11 rounded-xl border border-slate-200 px-5 text-sm font-semibold text-slate-700"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white disabled:opacity-60"
+                  >
+                    {saving && (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    )}
+
+                    {editingCourse
+                      ? "Save Changes"
+                      : "Create Course"}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </AppShell>
   )
 }
-
-function StatCard({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode
-  label: string
-  value: number
-}) {
-  return (
-    <div className="nexa-card nexa-card-hover p-5">
-      <div className="grid h-10 w-10 place-items-center rounded-xl bg-slate-100 text-slate-700">
-        {icon}
-      </div>
-
-      <p className="mt-5 text-xs font-medium text-slate-500">
-        {label}
-      </p>
-
-      <p className="mt-1 text-2xl font-bold tracking-tight text-slate-950">
-        {value}
-      </p>
-    </div>
-  )
-}
-
-function ContentRow({
-  item,
-  deleting,
-  onEdit,
-  onDelete,
-  onTogglePublished,
-}: {
-  item: Content
-  deleting: boolean
-  onEdit: () => void
-  onDelete: () => void
-  onTogglePublished: () => void
-}) {
-  return (
-    <div className="group px-5 py-5 transition hover:bg-slate-50 sm:px-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex min-w-0 gap-4">
-          <div className="hidden h-11 w-11 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600 sm:grid">
-            <FileText size={18} />
-          </div>
-
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h3 className="truncate text-sm font-bold text-slate-900">
-                {item.title}
-              </h3>
-
-              <span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-semibold text-slate-600">
-                {item.subject}
-              </span>
-
-              <span
-                className={`rounded-full px-2 py-1 text-[10px] font-semibold ${
-                  item.published
-                    ? "bg-emerald-50 text-emerald-700"
-                    : "bg-amber-50 text-amber-700"
-                }`}
-              >
-                {item.published
-                  ? "Published"
-                  : "Draft"}
-              </span>
-            </div>
-
-            <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-500">
-              {item.description ||
-                item.body.slice(0, 180)}
-            </p>
-
-            <p className="mt-2 text-[10px] text-slate-400">
-              Updated{" "}
-              {new Date(
-                item.updated_at ??
-                  item.created_at,
-              ).toLocaleDateString()}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex shrink-0 items-center gap-2">
-          <button
-            type="button"
-            onClick={onTogglePublished}
-            className={`h-9 rounded-lg px-3 text-[11px] font-semibold transition ${
-              item.published
-                ? "border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
-                : "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-            }`}
-          >
-            {item.published
-              ? "Unpublish"
-              : "Publish"}
-          </button>
-
-          <button
-            type="button"
-            onClick={onEdit}
-            className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:text-slate-900"
-            aria-label={`Edit ${item.title}`}
-          >
-            <Edit3 size={14} />
-          </button>
-
-          <button
-            type="button"
-            onClick={onDelete}
-            disabled={deleting}
-            className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 bg-white text-slate-400 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:opacity-40"
-            aria-label={`Delete ${item.title}`}
-          >
-            {deleting ? (
-              <Loader2
-                size={14}
-                className="animate-spin"
-              />
-            ) : (
-              <Trash2 size={14} />
-            )}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function Field({
-  label,
-  required,
-  children,
-}: {
-  label: string
-  required?: boolean
-  children: React.ReactNode
-}) {
-  return (
-    <label className="block">
-      <span className="mb-2 block text-xs font-semibold text-slate-700">
-        {label}
-
-        {required && (
-          <span className="ml-1 text-red-500">
-            *
-          </span>
-        )}
-      </span>
-
-      {children}
-    </label>
-  )
-}
-
-const inputClass =
-  "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
