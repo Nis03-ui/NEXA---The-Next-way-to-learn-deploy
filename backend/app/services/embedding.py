@@ -9,10 +9,8 @@ MODEL_NAME = "all-MiniLM-L6-v2"
 @lru_cache(maxsize=1)
 def get_embedding_model() -> SentenceTransformer:
     """
-    Load the embedding model once and reuse it.
-
-    Loading a transformer model for every request would be
-    extremely expensive, so we cache the model instance.
+    Load the embedding model only when an embedding operation
+    is actually requested, then reuse it.
     """
     return SentenceTransformer(MODEL_NAME)
 
@@ -20,13 +18,18 @@ def get_embedding_model() -> SentenceTransformer:
 class EmbeddingService:
 
     def __init__(self):
-        self.model = get_embedding_model()
+        # Lazy loading: do not load the transformer during service creation.
+        self.model = None
+
+    @property
+    def _model(self) -> SentenceTransformer:
+        return get_embedding_model()
 
     def embed(self, text: str) -> list[float]:
         """
         Convert text into a 384-dimensional embedding vector.
         """
-        vector = self.model.encode(
+        vector = self._model.encode(
             text,
             normalize_embeddings=True,
         )
@@ -40,7 +43,7 @@ class EmbeddingService:
         """
         Convert multiple texts into embedding vectors.
         """
-        vectors = self.model.encode(
+        vectors = self._model.encode(
             texts,
             normalize_embeddings=True,
         )
