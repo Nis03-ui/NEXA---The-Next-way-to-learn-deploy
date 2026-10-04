@@ -162,6 +162,22 @@ export const materials = {
   list: (courseId: number) =>
     api<CourseMaterial[]>(`/courses/${courseId}/materials`),
 
+  upload: (
+    courseId: number,
+    file: File,
+    description?: string,
+    published = true,
+  ) => {
+    const form = new FormData()
+    form.append("file", file)
+    if (description) form.append("description", description)
+    form.append("published", String(published))
+    return api<CourseMaterial>(`/courses/${courseId}/materials/upload`, {
+      method: "POST",
+      body: form,
+    })
+  },
+
   create: (
     courseId: number,
     data: {
