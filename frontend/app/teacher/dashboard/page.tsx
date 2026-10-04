@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
+import { motion } from "framer-motion"
 import {
   ArrowRight,
   BookOpen,
@@ -27,7 +28,8 @@ export default function TeacherDashboard() {
   const [assignmentCount, setAssignmentCount] = useState(0)
   const [eventCount, setEventCount] = useState(0)
   const [quizCount, setQuizCount] = useState(0)
-  const [courseAnalytics, setCourseAnalytics] = useState<{ title: string; students: number; assignments: number }[]>([])\n  const [quizAnalytics, setQuizAnalytics] = useState<{ title: string; average: number }[]>([])
+  const [courseAnalytics, setCourseAnalytics] = useState<{ title: string; students: number; assignments: number }[]>([])
+  const [quizAnalytics, setQuizAnalytics] = useState<{ title: string; average: number }[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -79,7 +81,8 @@ export default function TeacherDashboard() {
         setStudentCount(details.reduce((sum, item) => sum + item.students, 0))
         setAssignmentCount(details.reduce((sum, item) => sum + item.assignments, 0))
         setEventCount(details.reduce((sum, item) => sum + item.events, 0))
-        setQuizCount(ownedQuizzes.length)\n        setQuizAnalytics(quizResults)
+        setQuizCount(ownedQuizzes.length)
+        setQuizAnalytics(quizResults)
       } catch {
         if (active) {
           setCourseList([])
@@ -87,7 +90,8 @@ export default function TeacherDashboard() {
           setAssignmentCount(0)
           setEventCount(0)
           setQuizCount(0)
-          setCourseAnalytics([])\n          setQuizAnalytics([])
+          setCourseAnalytics([])
+          setQuizAnalytics([])
         }
       } finally {
         if (active) setLoading(false)
@@ -117,7 +121,7 @@ export default function TeacherDashboard() {
   return (
     <AppShell allowedRoles={["TEACHER", "ADMIN"]}>
       <div className="mx-auto w-full max-w-7xl space-y-6 pb-8 sm:space-y-8">
-        <section className="relative overflow-hidden rounded-3xl bg-slate-950 p-6 text-white sm:p-8">
+        <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} className="relative overflow-hidden rounded-3xl bg-slate-950 p-6 text-white sm:p-8">
           <div className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-blue-500/10 blur-3xl" />
           <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl">
@@ -133,21 +137,21 @@ export default function TeacherDashboard() {
               <Plus size={16} /> Manage courses
             </Link>
           </div>
-        </section>
+        </motion.section>
 
         <section className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {metrics.map((metric) => (
-            <div key={metric.label} className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+            <motion.div key={metric.label} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} whileHover={{ y: -3 }} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md sm:p-5">
               <p className="text-xs font-semibold text-slate-500">{metric.label}</p>
               <p className="mt-2 text-3xl font-black tracking-tight text-slate-950">
                 {loading ? "—" : metric.value}
               </p>
               <p className="mt-1 text-[11px] text-slate-400">{metric.note}</p>
-            </div>
+            </motion.div>
           ))}
         </section>
 
-        <section className="grid gap-5 lg:grid-cols-2">
+        <motion.section initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15, duration: 0.45 }} className="grid gap-5 lg:grid-cols-2">
           <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6">
             <div className="mb-4">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Real-time course data</p>
@@ -164,7 +168,7 @@ export default function TeacherDashboard() {
             </div>
             {loading ? <div className="h-64 animate-pulse rounded-2xl bg-slate-50" /> : <AnalyticsChart labels={courseAnalytics.map((item) => item.title)} values={courseAnalytics.map((item) => item.assignments)} label="Assignments" />}
           </div>
-        </section>
+        </motion.section>
 
         <section className="grid gap-5 lg:grid-cols-[1.35fr_.65fr]">
           <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6">
