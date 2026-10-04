@@ -5,6 +5,7 @@ export type Course = {
   title: string
   description?: string | null
   subject: string
+  thumbnail_url?: string | null
   teacher_id: number
   published: boolean
   created_at?: string
@@ -119,6 +120,7 @@ export const courses = {
     title: string
     description?: string
     subject: string
+    thumbnail_url?: string
     published?: boolean
   }) =>
     api<Course>("/courses", {
@@ -132,6 +134,7 @@ export const courses = {
       title?: string
       description?: string
       subject?: string
+      thumbnail_url?: string
       published?: boolean
     },
   ) =>
