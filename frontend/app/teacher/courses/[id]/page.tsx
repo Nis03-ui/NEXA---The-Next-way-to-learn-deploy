@@ -18,6 +18,7 @@ import {
   Trash2,
   Users,
   X,
+  Upload,
 } from "lucide-react"
 
 import AppShell from "@/components/layout/AppShell"
@@ -64,6 +65,7 @@ export default function TeacherCoursePage() {
   const [materialFileUrl, setMaterialFileUrl] = useState("")
   const [materialExternalUrl, setMaterialExternalUrl] = useState("")
   const [materialPublished, setMaterialPublished] = useState(true)
+  const [materialFile, setMaterialFile] = useState<File | null>(null)
 
   const [assignmentList, setAssignmentList] = useState<Assignment[]>([])
   const [quizList, setQuizList] = useState<QuizListItem[]>([])
@@ -310,6 +312,7 @@ export default function TeacherCoursePage() {
     setMaterialFileUrl("")
     setMaterialExternalUrl("")
     setMaterialPublished(true)
+    setMaterialFile(null)
     setEditingMaterial(null)
   }
 
@@ -325,6 +328,7 @@ export default function TeacherCoursePage() {
     setMaterialFileUrl(material.file_url || "")
     setMaterialExternalUrl(material.external_url || "")
     setMaterialPublished(material.published)
+    setMaterialFile(null)
     setShowMaterialForm(true)
   }
 
@@ -336,8 +340,8 @@ export default function TeacherCoursePage() {
       return
     }
 
-    if (!materialFileUrl.trim() && !materialExternalUrl.trim()) {
-      setError("Add a file URL or an external URL.")
+    if (!materialFileUrl.trim() && !materialExternalUrl.trim() && !materialFile) {
+      setError("Choose a local file or add a file/external URL.")
       return
     }
 
@@ -345,29 +349,32 @@ export default function TeacherCoursePage() {
       setSavingMaterial(true)
       setError("")
 
-      const payload = {
-        title: materialTitle.trim(),
-        description: materialDescription.trim() || undefined,
-        file_url: materialFileUrl.trim() || undefined,
-        external_url: materialExternalUrl.trim() || undefined,
-        published: materialPublished,
-      }
-
-      if (editingMaterial) {
-        const updated = await materials.update(
+      if (materialFile && !editingMaterial) {
+        const created = await materials.upload(
           courseId,
-          editingMaterial.id,
-          payload,
+          materialFile,
+          materialDescription.trim() || undefined,
+          materialPublished,
         )
-
-        setMaterialsList((current) =>
-          current.map((item) =>
-            item.id === updated.id ? updated : item,
-          ),
-        )
-      } else {
-        const created = await materials.create(courseId, payload)
         setMaterialsList((current) => [created, ...current])
+      } else {
+        const payload = {
+          title: materialTitle.trim(),
+          description: materialDescription.trim() || undefined,
+          file_url: materialFileUrl.trim() || undefined,
+          external_url: materialExternalUrl.trim() || undefined,
+          published: materialPublished,
+        }
+
+        if (editingMaterial) {
+          const updated = await materials.update(courseId, editingMaterial.id, payload)
+          setMaterialsList((current) =>
+            current.map((item) => item.id === updated.id ? updated : item),
+          )
+        } else {
+          const created = await materials.create(courseId, payload)
+          setMaterialsList((current) => [created, ...current])
+        }
       }
 
       setShowMaterialForm(false)
@@ -2134,6 +2141,31 @@ export default function TeacherCoursePage() {
                     className="mt-1.5 w-full resize-none rounded-xl border border-slate-200 px-3 py-3 text-sm outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
                   />
                 </div>
+
+                {!editingMaterial && (
+                  <div>
+                    <label className="text-sm font-semibold text-slate-800">
+                      Upload from device
+                    </label>
+                    <label className="mt-1.5 flex min-h-24 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 px-4 text-center hover:border-slate-300 hover:bg-white">
+                      <Upload className="h-5 w-5 text-slate-500" />
+                      <span className="mt-2 text-sm font-semibold text-slate-700">
+                        {materialFile ? materialFile.name : "Choose any file from your device"}
+                      </span>
+                      <span className="mt-1 text-xs text-slate-400">
+                        PDF, DOCX, PPTX, XLSX, images, ZIP, TXT and other file types · max 10 MB
+                      </span>
+                      <input
+                        type="file"
+                        className="sr-only"
+                        onChange={(e) => setMaterialFile(e.target.files?.[0] || null)}
+                      />
+                    </label>
+                    <p className="mt-1 text-xs text-slate-400">
+                      Uploaded files are attached directly to this course material.
+                    </p>
+                  </div>
+                )}
 
                 <div>
                   <label className="text-sm font-semibold text-slate-800">
