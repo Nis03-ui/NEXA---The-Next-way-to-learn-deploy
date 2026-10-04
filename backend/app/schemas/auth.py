@@ -26,19 +26,25 @@ class UserOut(BaseModel):
     name: str
     email: EmailStr
     role: Role
+    avatar_url: str | None = None
+    bio: str | None = None
+    linkedin_url: str | None = None
+    github_url: str | None = None
+    portfolio_url: str | None = None
+    twitter_url: str | None = None
 
-    model_config = ConfigDict(
-        from_attributes=True,
-    )
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ProfileUpdateRequest(BaseModel):
-    name: str | None = Field(
-        default=None,
-        min_length=2,
-        max_length=120,
-    )
+    name: str | None = Field(default=None, min_length=2, max_length=120)
     email: EmailStr | None = None
+    avatar_url: str | None = Field(default=None, max_length=1000)
+    bio: str | None = Field(default=None, max_length=2000)
+    linkedin_url: str | None = Field(default=None, max_length=500)
+    github_url: str | None = Field(default=None, max_length=500)
+    portfolio_url: str | None = Field(default=None, max_length=500)
+    twitter_url: str | None = Field(default=None, max_length=500)
 
 
 class TokenResponse(BaseModel):
