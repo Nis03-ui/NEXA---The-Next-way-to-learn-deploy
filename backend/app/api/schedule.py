@@ -163,6 +163,78 @@ async def get_schedule(
 
 
 # ---------------------------------------------------------
+# STUDENT: SCHEDULE COMPLETIONS
+# ---------------------------------------------------------
+
+@router.get(
+    "/{course_id}/schedule/completions",
+)
+async def get_schedule_completions(
+    course_id: int,
+    user: User = Depends(require_roles(Role.STUDENT)),
+    db: AsyncSession = Depends(get_db),
+):
+    await get_course(course_id, db)
+    await verify_enrollment(course_id, user.id, db)
+
+    result = await db.execute(
+        select(ScheduleCompletion)
+        .where(ScheduleCompletion.student_id == user.id)
+        .join(ScheduleEvent, ScheduleCompletion.event_id == ScheduleEvent.id)
+        .where(ScheduleEvent.course_id == course_id)
+        .order_by(ScheduleCompletion.completed_at.desc())
+    )
+
+    return [
+        {
+            "event_id": item.event_id,
+            "completed_at": item.completed_at,
+        }
+        for item in result.scalars().all()
+    ]
+
+
+@router.post(
+    "/{course_id}/schedule/{event_id}/done",
+)
+async def mark_schedule_done(
+    course_id: int,
+    event_id: int,
+    user: User = Depends(require_roles(Role.STUDENT)),
+    db: AsyncSession = Depends(get_db),
+):
+    await get_course(course_id, db)
+    await verify_enrollment(course_id, user.id, db)
+
+    event = await db.get(ScheduleEvent, event_id)
+    if not event or event.course_id != course_id:
+        raise HTTPException(status_code=404, detail="Schedule event not found")
+
+    existing = await db.execute(
+        select(ScheduleCompletion).where(
+            ScheduleCompletion.event_id == event_id,
+            ScheduleCompletion.student_id == user.id,
+        )
+    )
+    completion = existing.scalar_one_or_none()
+
+    if completion is None:
+        completion = ScheduleCompletion(
+            event_id=event_id,
+            student_id=user.id,
+            completed_at=datetime.utcnow(),
+        )
+        db.add(completion)
+        await db.commit()
+        await db.refresh(completion)
+
+    return {
+        "event_id": completion.event_id,
+        "completed_at": completion.completed_at,
+    }
+
+
+# ---------------------------------------------------------
 # UPDATE EVENT
 # ---------------------------------------------------------
 
@@ -195,15 +267,11 @@ async def update_event(
 
     values = data.model_dump(exclude_unset=True)
 
-    new_start = values.get(
-        "start_time",
-        event.start_time,
-    )
+    new_start = values.get("start_time", event.start_time)
+    new_end = values.get("end_time", event.end_time)
 
-    new_end = values.get(
-        "end_time",
-        event.end_time,
-    )
+    new_start = normalize_datetime(new_start)
+    new_end = normalize_datetime(new_end)
 
     if new_end <= new_start:
         raise HTTPException(
