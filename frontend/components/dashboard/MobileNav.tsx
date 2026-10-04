@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { motion } from "framer-motion"
 import { usePathname } from "next/navigation"
 import {
   CalendarDays,
@@ -62,14 +63,15 @@ export default function MobileNav() {
           const Icon = item.icon
           const active = isActive(item)
           return (
+            <motion.div key={item.name} whileTap={{ scale: 0.94 }}>
             <Link
-              key={item.name}
               href={item.href}
               className={["flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[10px] font-semibold transition", "outline-none focus-visible:ring-2 focus-visible:ring-slate-400", active ? "bg-slate-950 text-white" : "text-slate-400 hover:bg-slate-50 hover:text-slate-700"].join(" ")}
             >
               <Icon size={17} strokeWidth={active ? 2.3 : 1.9} />
               <span className="truncate">{item.name}</span>
             </Link>
+            </motion.div>
           )
         })}
       </div>
