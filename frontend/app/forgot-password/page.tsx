@@ -6,7 +6,7 @@ import { motion } from "framer-motion"
 import { ArrowLeft, CheckCircle2, Loader2, Mail, ShieldCheck } from "lucide-react"
 import { auth } from "@/lib/api"
 
-const emailPattern = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]{2,}$/
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("")
