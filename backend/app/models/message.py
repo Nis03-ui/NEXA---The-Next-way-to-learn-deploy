@@ -17,5 +17,6 @@ class Message(Base):
     file_url: Mapped[str | None] = mapped_column(String(2000), nullable=True)
     file_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     file_type: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    drive_file_id: Mapped[str | None] = mapped_column(String(200), nullable=True, index=True)
     is_read: Mapped[bool] = mapped_column(default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
