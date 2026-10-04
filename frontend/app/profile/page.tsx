@@ -9,6 +9,10 @@ import {
   Shield,
   User,
   X,
+  Github,
+  Globe2,
+  Linkedin,
+  Twitter,
 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -25,6 +29,12 @@ function ProfileContent() {
   const [editing, setEditing] = useState(false)
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
+  const [avatarUrl, setAvatarUrl] = useState("")
+  const [bio, setBio] = useState("")
+  const [linkedinUrl, setLinkedinUrl] = useState("")
+  const [githubUrl, setGithubUrl] = useState("")
+  const [portfolioUrl, setPortfolioUrl] = useState("")
+  const [twitterUrl, setTwitterUrl] = useState("")
 
   const [saving, setSaving] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
@@ -37,6 +47,12 @@ function ProfileContent() {
 
     setName(user.name)
     setEmail(user.email)
+    setAvatarUrl(user.avatar_url || "")
+    setBio(user.bio || "")
+    setLinkedinUrl(user.linkedin_url || "")
+    setGithubUrl(user.github_url || "")
+    setPortfolioUrl(user.portfolio_url || "")
+    setTwitterUrl(user.twitter_url || "")
   }, [user])
 
   if (!user) return null
@@ -54,6 +70,12 @@ function ProfileContent() {
 
     setName(user.name)
     setEmail(user.email)
+    setAvatarUrl(user.avatar_url || "")
+    setBio(user.bio || "")
+    setLinkedinUrl(user.linkedin_url || "")
+    setGithubUrl(user.github_url || "")
+    setPortfolioUrl(user.portfolio_url || "")
+    setTwitterUrl(user.twitter_url || "")
     setError("")
     setSuccess("")
     setEditing(true)
@@ -93,6 +115,12 @@ function ProfileContent() {
       const updatedUser = await users.updateMe({
         name: trimmedName,
         email: trimmedEmail,
+        avatar_url: avatarUrl.trim(),
+        bio: bio.trim(),
+        linkedin_url: linkedinUrl.trim(),
+        github_url: githubUrl.trim(),
+        portfolio_url: portfolioUrl.trim(),
+        twitter_url: twitterUrl.trim(),
       })
 
       /*
@@ -184,7 +212,7 @@ function ProfileContent() {
         <div className="border-b border-slate-100 bg-slate-50/70 px-5 py-6 sm:px-8">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
             <div className="grid h-20 w-20 shrink-0 place-items-center rounded-2xl bg-slate-950 text-xl font-black text-white">
-              {initials}
+              {user.avatar_url ? <img src={user.avatar_url} alt="" className="h-full w-full rounded-2xl object-cover" /> : initials}
             </div>
 
             <div className="min-w-0">
@@ -268,6 +296,32 @@ function ProfileContent() {
                 verification depending on your account
                 configuration.
               </p>
+            </div>
+
+            <div className="grid gap-5 border-t border-slate-100 pt-6 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <label htmlFor="profile-avatar" className="mb-2 block text-sm font-semibold text-slate-900">Profile photo URL</label>
+                <input id="profile-avatar" type="url" value={avatarUrl} onChange={e => setAvatarUrl(e.target.value)} disabled={saving} placeholder="https://..." className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-slate-100" />
+                <p className="mt-1.5 text-xs text-slate-400">Use a public image URL. Upload storage can be connected later without changing the profile model.</p>
+              </div>
+              <div className="sm:col-span-2">
+                <label htmlFor="profile-bio" className="mb-2 block text-sm font-semibold text-slate-900">Bio</label>
+                <textarea id="profile-bio" rows={3} maxLength={2000} value={bio} onChange={e => setBio(e.target.value)} disabled={saving} placeholder="Tell learners a little about yourself." className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm outline-none focus:ring-2 focus:ring-slate-100" />
+              </div>
+              {[
+                ["profile-linkedin","LinkedIn",linkedinUrl,setLinkedinUrl,Linkedin],
+                ["profile-github","GitHub",githubUrl,setGithubUrl,Github],
+                ["profile-portfolio","Portfolio",portfolioUrl,setPortfolioUrl,Globe2],
+                ["profile-twitter","X / Twitter",twitterUrl,setTwitterUrl,Twitter],
+              ].map(([id,label,value,setter,Icon]) => (
+                <div key={id as string}>
+                  <label htmlFor={id as string} className="mb-2 block text-sm font-semibold text-slate-900">{label as string}</label>
+                  <div className="relative">
+                    <Icon size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input id={id as string} type="url" value={value as string} onChange={e => (setter as (v:string)=>void)(e.target.value)} disabled={saving} placeholder="https://..." className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3 text-sm outline-none focus:ring-2 focus:ring-slate-100" />
+                  </div>
+                </div>
+              ))}
             </div>
 
             <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-4">
