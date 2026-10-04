@@ -35,6 +35,7 @@ import type {
   CourseStudent,
 } from "@/lib/lms"
 import type { Quiz, QuizListItem, QuizAttemptResponse, QuizCreateQuestion } from "@/lib/api"
+import { getToken } from "@/lib/auth/storage"
 
 type Tab =
   | "overview"
@@ -52,6 +53,26 @@ const tabs: { id: Tab; label: string; icon: typeof BookOpen }[] = [
   { id: "schedule", label: "Schedule", icon: CalendarDays },
   { id: "students", label: "Students", icon: Users },
 ]
+
+async function openTeacherProtectedFile(url: string, download = false, filename = "file") {
+  const token = getToken()
+  if (!token) throw new Error("Your session has expired. Please sign in again.")
+  const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+  if (!response.ok) throw new Error(`Unable to open file (${response.status})`)
+  const blob = await response.blob()
+  const objectUrl = URL.createObjectURL(blob)
+  if (download) {
+    const a = document.createElement("a")
+    a.href = objectUrl
+    a.download = filename + (blob.type === "application/pdf" && !filename.toLowerCase().endsWith(".pdf") ? ".pdf" : "")
+    document.body.appendChild(a); a.click(); a.remove()
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 1000)
+    return
+  }
+  const previewWindow = window.open("", "_blank")
+  if (previewWindow) previewWindow.location.href = objectUrl
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 60000)
+}
 
 export default function TeacherCoursePage() {
   const params = useParams()
@@ -1257,14 +1278,17 @@ export default function TeacherCoursePage() {
                           )}
 
                           {material.file_url && (
-                            <a
-                              href={material.file_url}
-                              target="_blank"
-                              rel="noreferrer"
+                            <button
+                              type="button"
+                              onClick={() => void openTeacherProtectedFile(
+                                `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"}/courses/${material.course_id}/materials/${material.id}/file`,
+                                false,
+                                material.title,
+                              )}
                               className="inline-flex min-h-10 items-center rounded-xl bg-slate-100 px-3 text-xs font-semibold text-slate-700 hover:bg-slate-200"
                             >
                               Open file
-                            </a>
+                            </button>
                           )}
                         </div>
                       </div>
