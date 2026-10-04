@@ -14,6 +14,7 @@ import {
 } from "lucide-react"
 
 import AppShell from "@/components/layout/AppShell"
+import AnalyticsChart from "@/components/dashboard/AnalyticsChart"
 import { useAuth } from "@/providers/AuthProvider"
 import { courses, assignments, schedule, quizzes, type Course } from "@/lib/lms"
 
@@ -26,6 +27,7 @@ export default function TeacherDashboard() {
   const [assignmentCount, setAssignmentCount] = useState(0)
   const [eventCount, setEventCount] = useState(0)
   const [quizCount, setQuizCount] = useState(0)
+  const [courseAnalytics, setCourseAnalytics] = useState<{ title: string; students: number; assignments: number }[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -58,6 +60,7 @@ export default function TeacherDashboard() {
 
         if (!active) return
 
+        setCourseAnalytics(owned.map((course, index) => ({ title: course.title, students: details[index].students, assignments: details[index].assignments })))
         setStudentCount(details.reduce((sum, item) => sum + item.students, 0))
         setAssignmentCount(details.reduce((sum, item) => sum + item.assignments, 0))
         setEventCount(details.reduce((sum, item) => sum + item.events, 0))
@@ -69,6 +72,7 @@ export default function TeacherDashboard() {
           setAssignmentCount(0)
           setEventCount(0)
           setQuizCount(0)
+          setCourseAnalytics([])
         }
       } finally {
         if (active) setLoading(false)
@@ -126,6 +130,25 @@ export default function TeacherDashboard() {
               <p className="mt-1 text-[11px] text-slate-400">{metric.note}</p>
             </div>
           ))}
+        </section>
+
+        <section className="grid gap-5 lg:grid-cols-2">
+          <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6">
+            <div className="mb-4">
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Real-time course data</p>
+              <h2 className="mt-2 text-xl font-black text-slate-950">Learners by course</h2>
+              <p className="mt-1 text-xs text-slate-500">Active enrollments loaded from your courses.</p>
+            </div>
+            {loading ? <div className="h-64 animate-pulse rounded-2xl bg-slate-50" /> : courseAnalytics.length === 0 ? <div className="grid h-64 place-items-center rounded-2xl bg-slate-50 text-xs text-slate-400">Create a course to see analytics.</div> : <AnalyticsChart labels={courseAnalytics.map((item) => item.title)} values={courseAnalytics.map((item) => item.students)} label="Active students" />}
+          </div>
+          <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6">
+            <div className="mb-4">
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Workload</p>
+              <h2 className="mt-2 text-xl font-black text-slate-950">Published assignments</h2>
+              <p className="mt-1 text-xs text-slate-500">Published assignments currently attached to each course.</p>
+            </div>
+            {loading ? <div className="h-64 animate-pulse rounded-2xl bg-slate-50" /> : <AnalyticsChart labels={courseAnalytics.map((item) => item.title)} values={courseAnalytics.map((item) => item.assignments)} label="Assignments" />}
+          </div>
         </section>
 
         <section className="grid gap-5 lg:grid-cols-[1.35fr_.65fr]">
