@@ -18,6 +18,30 @@ export type AdminCourse = Course & {
   enrolled_students: number
 }
 
+export type MessageContact = {
+  id: number
+  name: string
+  email: string
+  role: "STUDENT" | "TEACHER"
+  course_id: number
+  course_title: string
+  avatar_url?: string | null
+}
+
+export type DirectMessage = {
+  id: number
+  sender_id: number
+  recipient_id: number
+  course_id: number | null
+  body?: string | null
+  link_url?: string | null
+  file_url?: string | null
+  file_name?: string | null
+  file_type?: string | null
+  is_read: boolean
+  created_at: string
+}
+
 export type Enrollment = {
   id: number
   course_id: number
@@ -428,4 +452,23 @@ export const notifications = {
       method: "POST",
       body: JSON.stringify(data),
     }),
+}
+
+
+export const messages = {
+  contacts: () => api<MessageContact[]>("/messages/contacts"),
+  list: (userId: number) => api<DirectMessage[]>(`/messages/${userId}`),
+  send: (userId: number, data: { body?: string; link_url?: string; course_id?: number; file?: File }) => {
+    const form = new FormData()
+    if (data.body?.trim()) form.append("body", data.body.trim())
+    if (data.link_url?.trim()) form.append("link_url", data.link_url.trim())
+    if (data.course_id) form.append("course_id", String(data.course_id))
+    if (data.file) form.append("file", data.file)
+    return api<DirectMessage>(`/messages/${userId}`, { method: "POST", body: form })
+  },
+}
+
+export function messageFileUrl(fileUrl: string) {
+  const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"
+  return fileUrl.startsWith("http") ? fileUrl : base.replace(/\\/api\\/v1$/, "") + fileUrl
 }
