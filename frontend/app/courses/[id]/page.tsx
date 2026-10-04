@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 import Link from "next/link"
 import { useParams } from "next/navigation"
 import {
@@ -185,7 +186,7 @@ export default function CoursePage() {
 
   return (
     <AppShell allowedRoles={["STUDENT"]}>
-      <div className="mx-auto max-w-7xl space-y-6 sm:space-y-8">
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="mx-auto max-w-7xl space-y-6 sm:space-y-8">
         {/* Breadcrumb */}
         <Link
           href="/courses"
@@ -314,7 +315,7 @@ export default function CoursePage() {
         </div>
 
         {/* Content */}
-        {activeTab === "overview" && (
+        <AnimatePresence mode="wait">\n        {activeTab === "overview" && (
           <Overview
             course={course}
             materials={courseMaterials}
@@ -340,7 +341,7 @@ export default function CoursePage() {
         {activeTab === "schedule" && (
           <ScheduleList items={upcomingEvents} />
         )}
-      </div>
+      </motion.div>
     </AppShell>
   )
 }
@@ -384,9 +385,10 @@ function TabButton({
   children: React.ReactNode
 }) {
   return (
-    <button
+    <motion.button
       type="button"
       onClick={onClick}
+      whileTap={{ scale: 0.97 }}
       className={[
         "min-h-10 rounded-xl px-4 text-xs font-bold transition sm:px-5",
         active
@@ -395,7 +397,7 @@ function TabButton({
       ].join(" ")}
     >
       {children}
-    </button>
+    </motion.button>
   )
 }
 
