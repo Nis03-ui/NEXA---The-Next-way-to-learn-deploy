@@ -16,11 +16,13 @@ import {
 
 import AppShell from "@/components/layout/AppShell"
 import { courses, type Course } from "@/lib/lms"
+import CourseThumbnail from "@/components/courses/CourseThumbnail"
 
 type CourseForm = {
   title: string
   subject: string
   description: string
+  thumbnail_url: string
   published: boolean
 }
 
@@ -28,6 +30,7 @@ const emptyForm: CourseForm = {
   title: "",
   subject: "",
   description: "",
+  thumbnail_url: "",
   published: false,
 }
 
@@ -97,6 +100,7 @@ export default function TeacherPage() {
       title: course.title,
       subject: course.subject,
       description: course.description ?? "",
+      thumbnail_url: course.thumbnail_url ?? "",
       published: course.published,
     })
 
@@ -138,6 +142,7 @@ export default function TeacherPage() {
             title: form.title.trim(),
             subject: form.subject.trim(),
             description: form.description.trim() || undefined,
+            thumbnail_url: form.thumbnail_url.trim() || undefined,
             published: form.published,
           },
         )
@@ -156,6 +161,7 @@ export default function TeacherPage() {
           title: form.title.trim(),
           subject: form.subject.trim(),
           description: form.description.trim() || undefined,
+          thumbnail_url: form.thumbnail_url.trim() || undefined,
           published: form.published,
         })
 
@@ -365,6 +371,13 @@ export default function TeacherPage() {
                   whileHover={{ y: -3 }}
                   className="flex min-w-0 flex-col rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6"
                 >
+                  <CourseThumbnail
+                    title={course.title}
+                    subject={course.subject}
+                    thumbnailUrl={course.thumbnail_url}
+                    className="-mx-5 -mt-5 mb-5 h-40 sm:-mx-6 sm:-mt-6"
+                  />
+
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <span className="inline-flex max-w-full truncate rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
@@ -518,6 +531,29 @@ export default function TeacherPage() {
                     placeholder="e.g. Web Development"
                     className="mt-2 h-12 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
                   />
+                </div>
+
+                <div>
+                  <label className="text-sm font-semibold text-slate-800">
+                    Thumbnail URL
+                  </label>
+
+                  <input
+                    type="url"
+                    value={form.thumbnail_url}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        thumbnail_url: event.target.value,
+                      }))
+                    }
+                    placeholder="https://images.example.com/course-cover.jpg"
+                    className="mt-2 h-12 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
+                  />
+
+                  <p className="mt-1.5 text-xs text-slate-500">
+                    Optional. If empty or unavailable, NEXA creates a subject-based cover automatically.
+                  </p>
                 </div>
 
                 <div>
