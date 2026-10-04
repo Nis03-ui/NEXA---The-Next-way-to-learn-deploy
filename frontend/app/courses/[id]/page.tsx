@@ -23,6 +23,7 @@ import {
 import AppShell from "@/components/layout/AppShell"
 import {
   assignments,
+  assignmentFileUrl,
   courses,
   materials,
   courseMaterialFileUrl,
@@ -648,15 +649,14 @@ function AssignmentsList({
                     </span>
 
                     {item.file_url && (
-                      <a
-                        href={item.file_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex items-center gap-1.5 text-slate-600"
-                      >
-                        <FileText size={12} />
-                        Assignment file
-                      </a>
+                      <>
+                        <a href={assignmentFileUrl(item.id)} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-slate-600">
+                          <FileText size={12} /> View file
+                        </a>
+                        <a href={assignmentFileUrl(item.id, true)} className="flex items-center gap-1.5 text-slate-600">
+                          <ArrowDownToLine size={12} /> Download
+                        </a>
+                      </>
                     )}
 
                     {item.external_url && (
