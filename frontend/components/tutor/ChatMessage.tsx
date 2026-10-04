@@ -7,6 +7,7 @@ import {
   User,
 } from "lucide-react"
 import { useState } from "react"
+import { motion } from "framer-motion"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 
@@ -22,7 +23,10 @@ export default function ChatMessage({
   const isAssistant = role === "assistant"
 
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, y: 8, scale: 0.985 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.24, ease: "easeOut" }}
       className={[
         "flex w-full",
         isAssistant ? "justify-start" : "justify-end",
@@ -70,7 +74,7 @@ export default function ChatMessage({
           )}
         </div>
       </div>
-    </div>
+    </motion.div>
   )
 }
 
