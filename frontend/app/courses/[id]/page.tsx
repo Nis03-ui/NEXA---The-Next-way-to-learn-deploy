@@ -345,7 +345,7 @@ export default function CoursePage() {
         )}
 
         {activeTab === "schedule" && (
-          <ScheduleList items={upcomingEvents} />
+          <ScheduleList items={upcomingEvents} completedEvents={completedEvents} onDone={async (eventId) => { const result = await schedule.done(courseId, eventId); setCompletedEvents((current) => ({ ...current, [eventId]: result.completed_at })) }} />
         )}
         </AnimatePresence>
       </motion.div>
@@ -751,8 +751,12 @@ function QuizzesList({
 
 function ScheduleList({
   items,
+  completedEvents,
+  onDone,
 }: {
   items: ScheduleEvent[]
+  completedEvents: Record<number, string>
+  onDone: (eventId: number) => Promise<void>
 }) {
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
@@ -767,7 +771,7 @@ function ScheduleList({
       ) : (
         <div className="mt-6 space-y-3">
           {items.map((event) => (
-            <EventRow key={event.id} event={event} detailed />
+            <EventRow key={event.id} event={event} detailed completedAt={completedEvents[event.id]} onDone={onDone} />
           ))}
         </div>
       )}
@@ -778,9 +782,13 @@ function ScheduleList({
 function EventRow({
   event,
   detailed = false,
+  completedAt,
+  onDone,
 }: {
   event: ScheduleEvent
   detailed?: boolean
+  completedAt?: string
+  onDone?: (eventId: number) => Promise<void>
 }) {
   return (
     <article className="rounded-2xl border border-slate-200 p-4">
