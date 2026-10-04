@@ -59,8 +59,10 @@ export type Content = {
   description: string | null
   body: string
   subject: string
+  course_id?: number | null
   author_id: number
   published: boolean
+  file_url?: string | null
   created_at: string
   updated_at: string
 }
