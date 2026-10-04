@@ -130,6 +130,7 @@ export default function TeacherCoursePage() {
   const [maxMarks, setMaxMarks] = useState("100")
   const [externalUrl, setExternalUrl] = useState("")
   const [fileUrl, setFileUrl] = useState("")
+  const [assignmentFile, setAssignmentFile] = useState<File | null>(null)
   const [published, setPublished] = useState(true)
 
   const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null)
@@ -821,6 +822,7 @@ export default function TeacherCoursePage() {
     setMaxMarks("100")
     setExternalUrl("")
     setFileUrl("")
+    setAssignmentFile(null)
     setPublished(true)
     setEditingAssignment(null)
     setShowAssignmentForm(false)
@@ -878,7 +880,16 @@ export default function TeacherCoursePage() {
         published,
       }
 
-      if (editingAssignment) {
+      if (assignmentFile && !editingAssignment) {
+        const created = await assignments.upload(courseId, assignmentFile, {
+          title: title.trim(),
+          instructions: instructions.trim() || undefined,
+          due_date: dueDate ? new Date(dueDate).toISOString() : undefined,
+          max_marks: marks,
+          published,
+        })
+        setAssignmentList((current) => [created, ...current])
+      } else if (editingAssignment) {
         const updated = await assignments.update(
           courseId,
           editingAssignment.id,
@@ -2320,14 +2331,19 @@ export default function TeacherCoursePage() {
                 </Field>
               </div>
 
+              <Field label="Upload assignment file">
+                <label className="flex min-h-24 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 px-4 text-center hover:border-slate-300 hover:bg-white">
+                  <Upload className="h-5 w-5 text-slate-500" />
+                  <span className="mt-2 text-sm font-semibold text-slate-700">
+                    {assignmentFile ? assignmentFile.name : "Choose a file from your device"}
+                  </span>
+                  <span className="mt-1 text-xs text-slate-400">Maximum 10 MB</span>
+                  <input type="file" className="sr-only" onChange={(e) => setAssignmentFile(e.target.files?.[0] || null)} />
+                </label>
+              </Field>
+
               <Field label="External URL">
-                <input
-                  type="url"
-                  value={externalUrl}
-                  onChange={(e) => setExternalUrl(e.target.value)}
-                  placeholder="https://..."
-                  className="input"
-                />
+                <input type="url" value={externalUrl} onChange={(e) => setExternalUrl(e.target.value)} placeholder="https://..." className="input" />
               </Field>
 
               <Field label="File URL">
