@@ -202,7 +202,7 @@ function ProfileContent() {
             >
               <Pencil size={15} />
               Edit profile
-            </button>
+            </motion.button>
           )}
         </div>
       </div>
