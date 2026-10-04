@@ -337,6 +337,12 @@ async def delete_assignment(
             detail="Assignment not found",
         )
 
+    if assignment.drive_file_id:
+        try:
+            await asyncio.to_thread(delete_file, assignment.drive_file_id)
+        except Exception:
+            pass
+
     await db.delete(assignment)
     await db.commit()
 
@@ -513,6 +519,11 @@ async def submit_assignment_file(
     file_url = None
 
     if submission:
+        if submission.drive_file_id and submission.drive_file_id != drive_file_id:
+            try:
+                await asyncio.to_thread(delete_file, submission.drive_file_id)
+            except Exception:
+                pass
         submission.file_url = file_url
         submission.drive_file_id = drive_file_id
         submission.external_url = external_url
