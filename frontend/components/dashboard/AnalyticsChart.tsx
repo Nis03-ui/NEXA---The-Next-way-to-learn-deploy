@@ -9,6 +9,7 @@ import {
   Tooltip,
 } from "chart.js"
 import { Bar } from "react-chartjs-2"
+import { useEffect, useRef } from "react"
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend)
 
@@ -23,6 +24,17 @@ export default function AnalyticsChart({
   values,
   label,
 }: AnalyticsChartProps) {
+  const hostRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const node = hostRef.current
+    if (!node) return
+    node.animate(
+      [{ opacity: 0, transform: "translateY(8px)" }, { opacity: 1, transform: "translateY(0)" }],
+      { duration: 420, easing: "cubic-bezier(.22,1,.36,1)" },
+    )
+  }, [labels.join("|"), values.join("|")])
+
   const data = {
     labels,
     datasets: [
@@ -36,7 +48,7 @@ export default function AnalyticsChart({
   }
 
   return (
-    <div className="h-64 w-full">
+    <div ref={hostRef} className="h-64 w-full">
       <Bar
         data={data}
         options={{
