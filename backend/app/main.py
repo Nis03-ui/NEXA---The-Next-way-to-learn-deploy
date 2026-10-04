@@ -47,6 +47,10 @@ async def lifespan(app: FastAPI):
         await conn.execute(text(
             "ALTER TABLE user_profiles ALTER COLUMN avatar_url TYPE TEXT"
         ))
+        # One-time demo admin promotion. Remove this block after the account is promoted.
+        await conn.execute(text(
+            "UPDATE users SET role = 'ADMIN' WHERE lower(email) = lower(:email)"
+        ), {"email": "bhandarinishan69@gmail.com"})
 
     yield
 
