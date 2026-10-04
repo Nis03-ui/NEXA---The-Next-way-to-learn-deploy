@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 import {
   ArrowLeft,
   ArrowRight,
@@ -316,8 +317,15 @@ export default function QuizzesPage() {
             ) : filteredQuizzes.length === 0 ? (
               <EmptyQuizState />
             ) : (
-              <div className="grid gap-4 p-5 md:grid-cols-2">
-                {filteredQuizzes.map((quiz) => (
+              <motion.div layout className="grid gap-4 p-4 sm:p-5 md:grid-cols-2">
+                <AnimatePresence mode="popLayout">{filteredQuizzes.map((quiz) => (
+                  <motion.div
+                    layout
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.98 }}
+                    transition={{ duration: 0.22 }}
+                  >
                   <QuizCard
                     key={quiz.id}
                     quiz={quiz}
@@ -328,8 +336,9 @@ export default function QuizzesPage() {
                       startQuiz(quiz.id)
                     }
                   />
-                ))}
-              </div>
+                  </motion.div>
+                ))}</AnimatePresence>
+              </motion.div>
             )}
           </section>
         </div>
@@ -352,7 +361,7 @@ function QuizCard({
   onStart: () => void
 }) {
   return (
-    <article className="group rounded-2xl border border-slate-200 bg-white p-5 transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-sm">
+    <motion.article whileHover={{ y: -4 }} whileTap={{ scale: 0.995 }} className="group rounded-2xl border border-slate-200 bg-white p-5 transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-sm">
       <div className="mb-5 flex items-start justify-between gap-4">
         <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
           <HelpCircle className="h-5 w-5" />
@@ -406,7 +415,7 @@ function QuizCard({
           <ArrowRight className="h-4 w-4" />
         )}
       </button>
-    </article>
+    </motion.article>
   )
 }
 
@@ -505,7 +514,10 @@ function QuizAttemptView({
               </div>
 
               <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
-                <div
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progress}%` }}
+                  transition={{ duration: 0.45, ease: "easeOut" }}
                   className="h-full rounded-full bg-slate-950 transition-all"
                   style={{
                     width: `${progress}%`,
@@ -535,7 +547,8 @@ function QuizAttemptView({
                       option
 
                     return (
-                      <button
+                      <motion.button
+                        whileTap={{ scale: 0.985 }}
                         key={option}
                         type="button"
                         onClick={() =>
@@ -565,7 +578,7 @@ function QuizAttemptView({
                         <span className="text-sm font-medium">
                           {option}
                         </span>
-                      </button>
+                      </motion.button>
                     )
                   },
                 )}
