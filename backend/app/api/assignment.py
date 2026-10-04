@@ -6,6 +6,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from app.core.security import current_user, require_roles
+from app.core.config import settings
 from app.db.session import get_db
 from app.models.assignment import Assignment, AssignmentSubmission
 from app.models.notification import Notification
@@ -164,7 +165,7 @@ async def upload_assignment(
             raise HTTPException(status_code=422, detail="Invalid due date")
 
     max_size = 10 * 1024 * 1024
-    storage_dir = Path("uploads") / "assignments" / str(course_id)
+    storage_dir = Path(settings.upload_dir) / "assignments" / str(course_id)
     storage_dir.mkdir(parents=True, exist_ok=True)
     suffix = Path(file.filename).suffix.lower()
     safe_name = f"{uuid4().hex}{suffix}"
@@ -359,7 +360,7 @@ async def get_assignment_file(
     elif user.role == Role.TEACHER:
         await check_course_teacher(assignment.course_id, user, db)
 
-    file_path = Path(assignment.file_url.lstrip("/"))
+    file_path = Path(settings.upload_dir) / assignment.file_url.lstrip("/")
     if not file_path.is_file():
         raise HTTPException(status_code=404, detail="Assignment file is no longer available")
 
@@ -475,7 +476,7 @@ async def submit_assignment_file(
         raise HTTPException(status_code=400, detail="A file is required")
 
     max_size = 10 * 1024 * 1024
-    storage_dir = Path("uploads") / "assignments" / str(assignment_id)
+    storage_dir = Path(settings.upload_dir) / "assignments" / str(assignment_id)
     storage_dir.mkdir(parents=True, exist_ok=True)
     suffix = Path(file.filename).suffix.lower()
     safe_name = f"{uuid4().hex}{suffix}"
@@ -591,7 +592,7 @@ async def get_submission_file(
     if not submission.file_url:
         raise HTTPException(status_code=404, detail="This submission has no file")
 
-    file_path = Path(submission.file_url.lstrip('/'))
+    file_path = Path(settings.upload_dir) / submission.file_url.lstrip('/')
     if not file_path.is_file():
         raise HTTPException(status_code=404, detail="Submitted file is no longer available")
 
