@@ -1,6 +1,7 @@
 "use client"
 
 import { FormEvent, useEffect, useMemo, useState } from "react"
+import { AnimatePresence, motion } from "framer-motion"
 import Link from "next/link"
 import {
   BookOpen,
@@ -250,7 +251,7 @@ export default function TeacherPage() {
   return (
     <AppShell allowedRoles={["TEACHER", "ADMIN"]}>
       <div className="mx-auto max-w-7xl space-y-6 sm:space-y-8">
-        <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
+        <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-sm font-semibold text-blue-600">
@@ -276,7 +277,7 @@ export default function TeacherPage() {
               Create Course
             </button>
           </div>
-        </section>
+        </motion.section>
 
         {error && (
           <div
@@ -354,10 +355,14 @@ export default function TeacherPage() {
               )}
             </div>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {filteredCourses.map((course) => (
-                <article
+            <motion.div layout className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {filteredCourses.map((course, index) => (
+                <motion.article
                   key={course.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: Math.min(index * 0.04, 0.2), duration: 0.3 }}
+                  whileHover={{ y: -3 }}
                   className="flex min-w-0 flex-col rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6"
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -448,9 +453,9 @@ export default function TeacherPage() {
           )}
         </section>
 
-        {showForm && (
-          <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/40 p-0 sm:items-center sm:p-6">
-            <div className="max-h-[92vh] w-full overflow-y-auto rounded-t-3xl bg-white p-5 shadow-2xl sm:max-w-2xl sm:rounded-3xl sm:p-7">
+        <AnimatePresence>{showForm && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/40 p-0 sm:items-center sm:p-6">
+            <motion.div initial={{ opacity: 0, y: 18, scale: 0.99 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 18, scale: 0.99 }} transition={{ duration: 0.2 }} className="max-h-[92vh] w-full overflow-y-auto rounded-t-3xl bg-white p-5 shadow-2xl sm:max-w-2xl sm:rounded-3xl sm:p-7">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-sm font-semibold text-blue-600">
@@ -589,9 +594,9 @@ export default function TeacherPage() {
                   </button>
                 </div>
               </form>
-            </div>
-          </div>
-        )}
+            </motion.div>
+          </motion.div>
+        )}</AnimatePresence>
       </div>
     </AppShell>
   )
