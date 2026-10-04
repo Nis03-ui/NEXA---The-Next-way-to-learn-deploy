@@ -1,14 +1,16 @@
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status, Query
-from fastapi.responses import FileResponse
+from fastapi.responses import Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from pathlib import Path
 from uuid import uuid4
+import asyncio
 
 from app.core.security import current_user, require_roles
 from app.core.config import settings
 from app.db.session import get_db
 from app.services.notification import notify_course_students
+from app.services.google_drive import upload_file, download_file, delete_file
 from app.models.course import Course, Enrollment
 from app.models.course_material import CourseMaterial
 from app.models.user import Role, User
@@ -97,34 +99,35 @@ async def upload_material(
         raise HTTPException(status_code=400, detail="A file is required")
 
     max_size = 10 * 1024 * 1024
-    storage_dir = Path(settings.upload_dir) / "materials" / str(course_id)
-    storage_dir.mkdir(parents=True, exist_ok=True)
-    suffix = Path(file.filename).suffix
-    safe_name = f"{uuid4().hex}{suffix}"
-    target = storage_dir / safe_name
+    content = await file.read(max_size + 1)
+    await file.close()
+    if len(content) > max_size:
+        raise HTTPException(status_code=413, detail="File must be 10 MB or smaller")
 
-    size = 0
+    original_name = Path(file.filename).name
+    drive_name = f"material-{course_id}-{uuid4().hex}-{original_name}"
     try:
-        with target.open("wb") as output:
-            while chunk := await file.read(1024 * 1024):
-                size += len(chunk)
-                if size > max_size:
-                    target.unlink(missing_ok=True)
-                    raise HTTPException(status_code=413, detail="File must be 10 MB or smaller")
-                output.write(chunk)
-    finally:
-        await file.close()
+        drive_file_id = await asyncio.to_thread(
+            upload_file, content, drive_name, file.content_type
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Unable to store material file. Please try again.",
+        ) from exc
 
     material = CourseMaterial(
         course_id=course_id,
         uploaded_by=user.id,
         title=(title or Path(file.filename).stem).strip()[:200],
         description=description,
-        file_url=f"/uploads/materials/{course_id}/{safe_name}",
+        file_url=None,
+        drive_file_id=drive_file_id,
         published=published,
     )
     db.add(material)
     await db.flush()
+    material.file_url = f"/api/v1/courses/{course_id}/materials/{material.id}/file"
     await notify_course_students(
         db=db,
         course_id=course_id,
@@ -171,16 +174,24 @@ async def get_material_file(
     if user.role == Role.STUDENT and not material.published:
         raise HTTPException(status_code=404, detail="Material file not found")
 
-    file_path = Path(settings.upload_dir) / material.file_url.lstrip("/")
-    if not file_path.is_file():
+    if not material.drive_file_id:
         raise HTTPException(status_code=404, detail="Material file is no longer available")
 
-    filename = f"{material.title or 'course-material'}{file_path.suffix}"
-    return FileResponse(
-        path=file_path,
-        filename=filename,
-        media_type="application/pdf" if file_path.suffix.lower() == ".pdf" else None,
-        content_disposition_type="attachment" if download else "inline",
+    try:
+        content, mime_type = await asyncio.to_thread(download_file, material.drive_file_id)
+    except Exception as exc:
+        raise HTTPException(status_code=404, detail="Material file is no longer available") from exc
+
+    suffix = Path(material.title or "course-material").suffix
+    filename = f"{material.title or 'course-material'}{suffix}"
+    return Response(
+        content=content,
+        media_type=mime_type,
+        headers={
+            "Content-Disposition": (
+                f'{"attachment" if download else "inline"}; filename="{filename}"'
+            )
+        },
     )
 
 
@@ -306,6 +317,12 @@ async def delete_material(
             status_code=403,
             detail="You do not own this course",
         )
+
+    if material.drive_file_id:
+        try:
+            await asyncio.to_thread(delete_file, material.drive_file_id)
+        except Exception:
+            pass
 
     await db.delete(material)
     await db.commit()
