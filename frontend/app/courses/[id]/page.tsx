@@ -830,6 +830,19 @@ function EventRow({
                 </a>
               )}
             </div>
+            {detailed && onDone && (
+              <div className="mt-4">
+                {completedAt ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-3 py-2 text-[10px] font-bold text-emerald-700">
+                    <CheckCircle2 size={13} /> Done · {formatDateTime(completedAt)}
+                  </span>
+                ) : (
+                  <button type="button" onClick={() => void onDone(event.id)} className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-slate-950 px-3 text-xs font-bold text-white">
+                    <CheckCircle2 size={14} /> Done
+                  </button>
+                )}
+              </div>
+            )}
           )}
         </div>
       </div>
