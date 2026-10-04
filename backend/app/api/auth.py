@@ -105,7 +105,7 @@ async def forgot_password(
     )
 
     try:
-        send_email(
+        await send_email(
             to_email=user.email,
             subject="Reset your NEXA password",
             html_content=f"""
@@ -289,7 +289,7 @@ async def resend_verification(
     )
 
     try:
-        send_email(
+        await send_email(
             to_email=user.email,
             subject="Verify your NEXA email address",
             html_content=f"""
@@ -368,7 +368,7 @@ async def register(
     )
 
     try:
-        send_email(
+        await send_email(
             to_email=user.email,
             subject="Verify your NEXA email address",
             html_content=f"""\
