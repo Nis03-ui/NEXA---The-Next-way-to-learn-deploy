@@ -1,7 +1,9 @@
 from pathlib import Path
 from uuid import uuid4
+import asyncio
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, Query
+from fastapi.responses import Response
 from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,6 +12,7 @@ from app.db.session import get_db
 from app.models.course import Course, Enrollment
 from app.models.user import Role, User
 from app.models.message import Message
+from app.services.google_drive import upload_file, download_file
 
 router = APIRouter(prefix="/messages", tags=["Messages"])
 
@@ -161,26 +164,20 @@ async def send_message(
     file_url = None
     file_name = None
     file_type = None
+    drive_file_id = None
 
     if file is not None:
         safe_name = Path(file.filename or "attachment").name
-        extension = Path(safe_name).suffix
-        stored_name = f"{uuid4().hex}{extension}"
-        destination = UPLOAD_DIR / stored_name
+        content = await file.read(MAX_FILE_SIZE + 1)
+        await file.close()
+        if len(content) > MAX_FILE_SIZE:
+            raise HTTPException(status_code=413, detail="Message attachment must be 10 MB or smaller")
 
-        total = 0
-        with destination.open("wb") as output:
-            while True:
-                chunk = await file.read(1024 * 1024)
-                if not chunk:
-                    break
-                total += len(chunk)
-                if total > MAX_FILE_SIZE:
-                    destination.unlink(missing_ok=True)
-                    raise HTTPException(status_code=413, detail="Message attachment must be 10 MB or smaller")
-                output.write(chunk)
-
-        file_url = f"/uploads/messages/{stored_name}"
+        drive_name = f"message-{user.id}-{user_id}-{uuid4().hex}-{safe_name}"
+        try:
+            drive_file_id = await asyncio.to_thread(upload_file, content, drive_name, file.content_type)
+        except Exception as exc:
+            raise HTTPException(status_code=503, detail="Unable to store message attachment. Please try again.") from exc
         file_name = safe_name
         file_type = file.content_type
 
@@ -190,9 +187,10 @@ async def send_message(
         course_id=course.id,
         body=clean_body,
         link_url=clean_link,
-        file_url=file_url,
+        file_url=None,
         file_name=file_name,
         file_type=file_type,
+        drive_file_id=drive_file_id,
     )
     db.add(message)
     await db.commit()
@@ -211,3 +209,27 @@ async def send_message(
         "is_read": message.is_read,
         "created_at": message.created_at,
     }
+
+
+@router.get("/{user_id}/files/{message_id}")
+async def get_message_file(
+    user_id: int,
+    message_id: int,
+    download: bool = Query(False),
+    user: User = Depends(require_roles(Role.STUDENT, Role.TEACHER)),
+    db: AsyncSession = Depends(get_db),
+):
+    await _shared_course(user, user_id, None, db)
+    message = await db.get(Message, message_id)
+    if not message or {message.sender_id, message.recipient_id} != {user.id, user_id}:
+        raise HTTPException(status_code=404, detail="Message file not found")
+    if not message.drive_file_id:
+        raise HTTPException(status_code=404, detail="Message file is no longer available")
+    try:
+        content, mime_type = await asyncio.to_thread(download_file, message.drive_file_id)
+    except Exception as exc:
+        raise HTTPException(status_code=404, detail="Message file is no longer available") from exc
+    filename = message.file_name or "message-attachment"
+    return Response(content=content, media_type=mime_type, headers={
+        "Content-Disposition": f'{"attachment" if download else "inline"}; filename="{filename}"'
+    })
