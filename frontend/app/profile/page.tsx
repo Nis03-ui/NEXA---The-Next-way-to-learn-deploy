@@ -490,7 +490,6 @@ function ProfileContent() {
           </>
         )}
       </section>
-    </motion.section>
     </motion.div>
   )
 }
