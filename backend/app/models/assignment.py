@@ -43,6 +43,12 @@ class Assignment(Base):
         nullable=True,
     )
 
+    drive_file_id: Mapped[str | None] = mapped_column(
+        String(200),
+        nullable=True,
+        index=True,
+    )
+
     external_url: Mapped[str | None] = mapped_column(
         String(1000),
         nullable=True,
