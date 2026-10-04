@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
+import type { LucideIcon } from "lucide-react"
 import {
   Activity,
   ArrowRight,
@@ -104,7 +105,7 @@ export default function AdminPage() {
             ["AI sessions", stats?.chat_sessions, Activity],
           ].map(([label, value, Icon]) => (
             <div key={String(label)} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-              <Icon className="text-slate-400" size={17} />
+              {(() => { const IconComponent = Icon as LucideIcon; return <IconComponent className="text-slate-400" size={17} /> })()}
               <p className="mt-4 text-2xl font-black text-slate-950">{loading ? "—" : String(value ?? 0)}</p>
               <p className="mt-1 text-[11px] font-semibold text-slate-500">{String(label)}</p>
             </div>
