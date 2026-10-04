@@ -17,7 +17,8 @@ import {
 import AppShell from "@/components/layout/AppShell"
 import AnalyticsChart from "@/components/dashboard/AnalyticsChart"
 import { useAuth } from "@/providers/AuthProvider"
-import { courses, assignments, schedule, quizzes, type Course } from "@/lib/lms"
+import { quizzes } from "@/lib/api"
+import { courses, assignments, schedule, type Course } from "@/lib/lms"
 
 type Metric = { label: string; value: number; note: string }
 
