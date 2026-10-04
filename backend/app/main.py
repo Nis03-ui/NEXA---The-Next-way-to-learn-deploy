@@ -38,6 +38,7 @@ async def _promote_demo_admin():
 async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        await conn.execute(text("ALTER TABLE courses ADD COLUMN IF NOT EXISTS thumbnail_url VARCHAR(1000)"))
 
     asyncio.create_task(_promote_demo_admin())
 
