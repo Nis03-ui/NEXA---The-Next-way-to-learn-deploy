@@ -7,6 +7,8 @@ from app.core.security import require_roles
 from app.db.session import get_db
 from app.models.chat import ChatSession
 from app.models.content import Content
+from app.models.course import Course
+from app.models.quiz import Quiz
 from app.models.user import Role, User
 from app.schemas.admin import AdminUserOut, RoleUpdate
 
@@ -58,13 +60,34 @@ async def stats(
         )
     ).scalar_one()
 
+    published_content_count = (
+        await db.execute(
+            select(func.count(Content.id)).where(Content.published.is_(True))
+        )
+    ).scalar_one()
+
+    course_count = (
+        await db.execute(
+            select(func.count(Course.id))
+        )
+    ).scalar_one()
+
+    quiz_count = (
+        await db.execute(
+            select(func.count(Quiz.id))
+        )
+    ).scalar_one()
+
     return {
-        "users": user_count,
-        "students": student_count,
-        "teachers": teacher_count,
-        "admins": admin_count,
+        "total_users": user_count,
+        "total_students": student_count,
+        "total_teachers": teacher_count,
+        "total_admins": admin_count,
+        "total_content": content_count,
+        "published_content": published_content_count,
+        "total_courses": course_count,
+        "total_quizzes": quiz_count,
         "chat_sessions": session_count,
-        "resources": content_count,
         "api_health": "ok",
     }
 
