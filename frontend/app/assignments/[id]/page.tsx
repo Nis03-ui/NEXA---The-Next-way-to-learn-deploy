@@ -14,6 +14,8 @@ import {
   Link2,
   Send,
   Sparkles,
+  Upload,
+  X,
 } from "lucide-react"
 
 import AppShell from "@/components/layout/AppShell"
@@ -35,6 +37,7 @@ export default function AssignmentPage() {
     useState<AssignmentSubmission | null>(null)
 
   const [externalUrl, setExternalUrl] = useState("")
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [message, setMessage] = useState("")
@@ -114,25 +117,27 @@ export default function AssignmentPage() {
 
     const value = externalUrl.trim()
 
-    if (!value) {
-      setMessage("Please enter your submission link.")
+    if (!selectedFile && !value) {
+      setMessage("Upload a file or enter a submission link.")
       return
     }
 
-    try {
-      new URL(value)
-    } catch {
-      setMessage("Please enter a valid URL.")
-      return
+    if (value) {
+      try {
+        new URL(value)
+      } catch {
+        setMessage("Please enter a valid URL.")
+        return
+      }
     }
 
     setSubmitting(true)
     setMessage("")
 
     try {
-      const result = await assignments.submit(assignmentId, {
-        external_url: value,
-      })
+      const result = selectedFile
+        ? await assignments.submitFile(assignmentId, selectedFile, value)
+        : await assignments.submit(assignmentId, { external_url: value })
 
       setSubmission(result)
       setMessage("Assignment submitted successfully.")
@@ -398,6 +403,56 @@ export default function AssignmentPage() {
             >
               <div>
                 <label
+                  htmlFor="submission-file"
+                  className="mb-2 block text-xs font-bold text-slate-700"
+                >
+                  Upload your file
+                </label>
+
+                <label
+                  htmlFor="submission-file"
+                  className="flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-5 text-center transition hover:border-slate-500 hover:bg-white"
+                >
+                  <Upload size={20} className="text-slate-500" />
+                  <span className="mt-2 text-sm font-bold text-slate-700">
+                    {selectedFile ? selectedFile.name : "Choose a file"}
+                  </span>
+                  <span className="mt-1 text-[11px] text-slate-400">Maximum 10 MB</span>
+                  <input
+                    id="submission-file"
+                    type="file"
+                    className="sr-only"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0] ?? null
+                      if (file && file.size > 10 * 1024 * 1024) {
+                        setSelectedFile(null)
+                        setMessage("File must be 10 MB or smaller.")
+                        event.currentTarget.value = ""
+                        return
+                      }
+                      setMessage("")
+                      setSelectedFile(file)
+                    }}
+                  />
+                </label>
+
+                {selectedFile && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedFile(null)}
+                    className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-950"
+                  >
+                    <X size={13} /> Remove file
+                  </button>
+                )}
+
+                <div className="my-5 flex items-center gap-3 text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                  <span className="h-px flex-1 bg-slate-100" />
+                  or submit a link
+                  <span className="h-px flex-1 bg-slate-100" />
+                </div>
+
+                <label
                   htmlFor="submission-url"
                   className="mb-2 block text-xs font-bold text-slate-700"
                 >
@@ -424,8 +479,7 @@ export default function AssignmentPage() {
                 </div>
 
                 <p className="mt-2 text-[11px] leading-5 text-slate-400">
-                  Submit a GitHub repository, hosted project, Google Drive
-                  file, or another accessible URL.
+                  Upload your assignment directly, or submit a GitHub repository, hosted project, Google Drive file, or another accessible URL.
                 </p>
               </div>
 
