@@ -19,7 +19,12 @@ def _drive_service():
     if not settings.google_drive_folder_id:
         raise RuntimeError("GOOGLE_DRIVE_FOLDER_ID is not configured")
 
-    credentials_info = json.loads(settings.google_drive_service_account_json)
+    try:
+        credentials_info = json.loads(settings.google_drive_service_account_json)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError("GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON is not valid JSON") from exc
+    if not isinstance(credentials_info, dict) or credentials_info.get("type") != "service_account":
+        raise RuntimeError("GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON must contain a service-account credential")
     credentials = service_account.Credentials.from_service_account_info(
         credentials_info,
         scopes=SCOPES,
