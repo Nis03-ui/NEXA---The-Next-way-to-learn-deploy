@@ -233,6 +233,11 @@ export const materials = {
     ),
 }
 
+export function courseMaterialFileUrl(courseId: number, materialId: number, download = false) {
+  const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"
+  return base + "/courses/" + courseId + "/materials/" + materialId + "/file" + (download ? "?download=true" : "")
+}
+
 export const assignments = {
   list: (courseId: number) =>
     api<Assignment[]>(`/courses/${courseId}/assignments`),
