@@ -303,6 +303,17 @@ export const assignments = {
       body: JSON.stringify(data),
     }),
 
+  upload: (courseId: number, file: File, data: { title: string; instructions?: string; due_date?: string; max_marks?: number; published?: boolean }) => {
+    const form = new FormData()
+    form.append("file", file)
+    form.append("title", data.title)
+    if (data.instructions) form.append("instructions", data.instructions)
+    if (data.due_date) form.append("due_date", data.due_date)
+    form.append("max_marks", String(data.max_marks ?? 100))
+    form.append("published", String(data.published ?? true))
+    return api<Assignment>(`/courses/${courseId}/assignments/upload`, { method: "POST", body: form })
+  },
+
   submit: (
     assignmentId: number,
     data: {
