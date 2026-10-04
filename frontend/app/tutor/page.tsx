@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 import {
   ArrowUp,
   BookOpen,
@@ -519,7 +520,7 @@ export default function TutorPage() {
         "TEACHER",
       ]}
     >
-      <div className="mx-auto h-full w-full max-w-[1600px]">
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className="mx-auto h-full w-full max-w-[1600px]">
         <div className="relative flex h-[calc(100dvh-8rem)] min-h-0 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm sm:rounded-3xl">
 
           <aside className="hidden w-64 shrink-0 border-r border-slate-200 bg-slate-50/60 lg:flex xl:w-72">
@@ -1060,7 +1061,7 @@ export default function TutorPage() {
             </div>
           </main>
         </div>
-      </div>
+      </motion.div>
     </AppShell>
   )
 }
