@@ -20,6 +20,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react"
 
 import AppShell from "@/components/layout/AppShell"
+import AnalyticsChart from "@/components/dashboard/AnalyticsChart"
 import { admin, type AdminStats, type User } from "@/lib/api"
 import { notifications } from "@/lib/lms"
 
@@ -285,6 +286,44 @@ export default function AdminPage() {
           />
 
 
+        </section>
+
+        {/* Platform analytics */}
+        <section className="grid gap-5 lg:grid-cols-2">
+          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <div className="mb-4">
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Live user data</p>
+              <h2 className="mt-1 text-xl font-black tracking-tight text-slate-900">Users by role</h2>
+              <p className="mt-1 text-xs text-slate-500">Distribution calculated from the users returned by the admin API.</p>
+            </div>
+            <AnalyticsChart
+              labels={["Students", "Teachers", "Admins"]}
+              values={[
+                users.filter((item) => item.role === "STUDENT").length,
+                users.filter((item) => item.role === "TEACHER").length,
+                users.filter((item) => item.role === "ADMIN").length,
+              ]}
+              label="Users"
+            />
+          </div>
+
+          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <div className="mb-4">
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Platform activity</p>
+              <h2 className="mt-1 text-xl font-black tracking-tight text-slate-900">Content & AI usage</h2>
+              <p className="mt-1 text-xs text-slate-500">Current totals supplied by the live admin statistics endpoint.</p>
+            </div>
+            <AnalyticsChart
+              labels={["Courses", "Content", "Quizzes", "AI sessions"]}
+              values={[
+                stats?.total_courses ?? 0,
+                stats?.total_content ?? 0,
+                stats?.total_quizzes ?? 0,
+                stats?.chat_sessions ?? 0,
+              ]}
+              label="Platform totals"
+            />
+          </div>
         </section>
 
         {/* Main actions */}
