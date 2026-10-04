@@ -499,7 +499,6 @@ export default function AssignmentPage() {
                     }
                     placeholder="https://github.com/your-project"
                     className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
-                    required
                   />
                 </div>
 
