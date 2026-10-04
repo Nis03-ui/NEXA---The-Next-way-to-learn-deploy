@@ -14,13 +14,15 @@ function VerifyEmailContent() {
   const token = searchParams.get("token")
   const email = searchParams.get("email") || ""
 
-  const [status, setStatus] = useState<"loading" | "success" | "error">(
-    token ? "loading" : "error",
+  const [status, setStatus] = useState<"loading" | "pending" | "success" | "error">(
+    token ? "loading" : email ? "pending" : "error",
   )
   const [message, setMessage] = useState(
     token
       ? "Verifying your email address…"
-      : "This verification link is missing its token.",
+      : email
+        ? "We sent a verification link to your email. Open it to activate your NEXA account."
+        : "This verification link is missing its token.",
   )
 
   useEffect(() => {
@@ -74,9 +76,11 @@ function VerifyEmailContent() {
           <h1 className="text-2xl font-black sm:text-3xl">
             {status === "loading"
               ? "Verifying your email"
-              : status === "success"
-                ? "Email verified"
-                : "Verification failed"}
+              : status === "pending"
+                ? "Check your email"
+                : status === "success"
+                  ? "Email verified"
+                  : "Verification failed"}
           </h1>
 
           <p className="mx-auto mt-4 max-w-md text-sm leading-6 text-slate-300">
@@ -92,7 +96,7 @@ function VerifyEmailContent() {
             </Link>
           )}
 
-          {status === "error" && (
+          {(status === "pending" || status === "error") && (
             <div className="mt-7 flex flex-col items-center gap-3">
               {email && (
                 <button
@@ -101,7 +105,7 @@ function VerifyEmailContent() {
                     try {
                       setMessage("Sending a new verification email…")
                       await auth.resendVerification(email)
-                      setMessage("If the account exists and is not verified, a new verification email has been sent.")
+                      setMessage("A new verification email has been sent. Please check your inbox.")
                     } catch (error) {
                       setMessage(
                         error instanceof Error
