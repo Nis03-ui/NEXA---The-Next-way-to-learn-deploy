@@ -1,4 +1,7 @@
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from pathlib import Path
+from uuid import uuid4
+import asyncio
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -17,6 +20,7 @@ from app.schemas.ai import (
 from app.services.ai import answer
 from app.services.pdf import PDFExtractionService
 from app.services.student_documents import StudentDocumentIndexingService
+from app.services.google_drive import upload_file
 
 
 router = APIRouter(
@@ -135,6 +139,11 @@ async def upload_document(
 
     try:
         filename = file.filename or "document.pdf"
+        max_size = 10 * 1024 * 1024
+        document_bytes = await file.read(max_size + 1)
+        if len(document_bytes) > max_size:
+            raise HTTPException(status_code=413, detail="File must be 10 MB or smaller")
+        await file.seek(0)
 
         # --------------------------------------------------------
         # Extract PDF text
@@ -171,6 +180,11 @@ async def upload_document(
         await StudentDocumentIndexingService().index_document(
             document=document,
             db=db,
+        )
+
+        drive_name = f"student-document-{user.id}-{document.id}-{uuid4().hex}-{Path(filename).name}"
+        document.drive_file_id = await asyncio.to_thread(
+            upload_file, document_bytes, drive_name, "application/pdf"
         )
 
         # --------------------------------------------------------
