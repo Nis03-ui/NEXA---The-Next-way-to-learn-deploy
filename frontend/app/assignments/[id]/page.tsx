@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { motion } from "framer-motion"
 import Link from "next/link"
 import { useParams } from "next/navigation"
 import {
@@ -207,7 +208,7 @@ export default function AssignmentPage() {
         </Link>
 
         {/* Header */}
-        <section className="relative overflow-hidden rounded-3xl bg-slate-950 p-6 text-white sm:p-8">
+        <motion.section className="relative overflow-hidden rounded-3xl bg-slate-950 p-6 text-white sm:p-8">
           <div
             aria-hidden="true"
             className="absolute -right-20 -top-24 h-64 w-64 rounded-full bg-blue-500/20 blur-3xl"
@@ -251,7 +252,7 @@ export default function AssignmentPage() {
               )}
             </div>
           </div>
-        </section>
+        </motion.section>
 
         {/* Instructions */}
         <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-7">
@@ -428,18 +429,19 @@ export default function AssignmentPage() {
                 </p>
               </div>
 
-              <button
+              <motion.button whileTap={{ scale: 0.97 }}
                 type="submit"
                 disabled={submitting}
                 className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-slate-950 text-sm font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Send size={16} />
                 {submitting ? "Submitting..." : "Submit assignment"}
-              </button>
+              </motion.button>
             </form>
           )}
         </section>
       </div>
+      </motion.div>
     </AppShell>
   )
 }
