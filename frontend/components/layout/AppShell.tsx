@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect } from "react"
+import { motion } from "framer-motion"
 import { usePathname, useRouter } from "next/navigation"
 
 import Sidebar from "@/components/dashboard/Sidebar"
@@ -62,9 +63,9 @@ export default function AppShell({
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50">
         <div className="flex flex-col items-center gap-3">
-          <div className="grid h-11 w-11 place-items-center rounded-xl bg-slate-950 text-sm font-black text-white shadow-sm">
+          <motion.div initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.25 }} className="grid h-11 w-11 place-items-center rounded-xl bg-slate-950 text-sm font-black text-white shadow-sm">
             N
-          </div>
+          </motion.div>
           <div className="h-1.5 w-20 overflow-hidden rounded-full bg-slate-200">
             <div className="h-full w-1/2 animate-pulse rounded-full bg-slate-900" />
           </div>
