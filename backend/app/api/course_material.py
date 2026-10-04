@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status, Query
+from fastapi.responses import FileResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from pathlib import Path
@@ -133,6 +134,55 @@ async def upload_material(
     await db.commit()
     await db.refresh(material)
     return material
+@router.get(
+    "/{course_id}/materials/{material_id}/file",
+)
+async def get_material_file(
+    course_id: int,
+    material_id: int,
+    download: bool = Query(False),
+    user: User = Depends(current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    course = await db.get(Course, course_id)
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+
+    if user.role == Role.STUDENT:
+        enrollment = await db.execute(
+            select(Enrollment).where(
+                Enrollment.course_id == course_id,
+                Enrollment.student_id == user.id,
+                Enrollment.status == "ACTIVE",
+            )
+        )
+        if not enrollment.scalar_one_or_none():
+            raise HTTPException(status_code=403, detail="You are not enrolled in this course")
+    elif user.role == Role.TEACHER and course.teacher_id != user.id:
+        raise HTTPException(status_code=403, detail="You do not own this course")
+    elif user.role not in (Role.STUDENT, Role.TEACHER, Role.ADMIN):
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    material = await db.get(CourseMaterial, material_id)
+    if not material or material.course_id != course_id or not material.file_url:
+        raise HTTPException(status_code=404, detail="Material file not found")
+
+    if user.role == Role.STUDENT and not material.published:
+        raise HTTPException(status_code=404, detail="Material file not found")
+
+    file_path = Path(material.file_url.lstrip("/"))
+    if not file_path.is_file():
+        raise HTTPException(status_code=404, detail="Material file is no longer available")
+
+    filename = f"{material.title or 'course-material'}{file_path.suffix}"
+    return FileResponse(
+        path=file_path,
+        filename=filename,
+        media_type="application/pdf" if file_path.suffix.lower() == ".pdf" else None,
+        content_disposition_type="attachment" if download else "inline",
+    )
+
+
 @router.get(
     "/{course_id}/materials",
     response_model=list[CourseMaterialResponse],
