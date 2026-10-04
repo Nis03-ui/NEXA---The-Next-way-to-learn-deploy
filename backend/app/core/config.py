@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     smtp_from_name: str = "NEXA"
 
     gemini_api_key: str | None = None
-    gemini_model: str = "gemini-3.6-flash"
+    gemini_model: str = "gemini-3.8-flash"
 
     model_config = SettingsConfigDict(
         env_file=".env",
