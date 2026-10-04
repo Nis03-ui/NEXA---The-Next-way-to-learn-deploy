@@ -203,7 +203,8 @@ export default function TeacherDashboard() {
                 </div>
               ) : (
                 courseList.slice(0, 5).map((course, index) => (
-                  <motion.div initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.05 * index, duration: 0.3 }} whileHover={{ x: 3 }} className="rounded-2xl">\n                    <Link key={course.id} href={`/teacher/courses/${course.id}`} className="flex min-h-16 items-center gap-3 rounded-2xl border border-slate-100 p-4 transition hover:border-slate-300 hover:bg-slate-50">
+                  <motion.div initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.05 * index, duration: 0.3 }} whileHover={{ x: 3 }} className="rounded-2xl">
+                    <Link key={course.id} href={`/teacher/courses/${course.id}`} className="flex min-h-16 items-center gap-3 rounded-2xl border border-slate-100 p-4 transition hover:border-slate-300 hover:bg-slate-50">
                     <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-slate-100"><BookOpen size={18} className="text-slate-700" /></div>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-bold text-slate-900">{course.title}</p>
