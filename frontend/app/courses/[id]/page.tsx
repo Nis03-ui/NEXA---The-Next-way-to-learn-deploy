@@ -16,6 +16,7 @@ import {
   FileText,
   GraduationCap,
   Link2,
+  MessageCircle,
   PlayCircle,
   Sparkles,
 } from "lucide-react"
@@ -53,6 +54,7 @@ export default function CoursePage() {
   const courseId = Number(params.id)
 
   const [course, setCourse] = useState<Course | null>(null)
+  const [teacher, setTeacher] = useState<{ id: number; name: string; email: string; avatar_url?: string | null; bio?: string | null } | null>(null)
   const [courseMaterials, setCourseMaterials] = useState<CourseMaterial[]>([])
   const [courseAssignments, setCourseAssignments] = useState<Assignment[]>([])
   const [events, setEvents] = useState<ScheduleEvent[]>([])
@@ -88,6 +90,7 @@ export default function CoursePage() {
         }
 
         setCourse(foundCourse)
+        try { setTeacher(await courses.teacher(courseId)) } catch { setTeacher(null) }
         setCourseMaterials(courseMaterialData)
         setCourseAssignments(assignmentData)
         setEvents(scheduleData)
@@ -230,6 +233,13 @@ export default function CoursePage() {
               {course.description ||
                 "Continue your learning journey with NEXA."}
             </p>
+
+            {teacher && (
+              <Link href={`/messages?userId=${teacher.id}&courseId=${course.id}`} className="mt-6 inline-flex min-h-11 items-center gap-2 rounded-xl bg-white px-4 text-sm font-bold text-slate-950 transition hover:bg-slate-100">
+                <MessageCircle size={16} />
+                Message {teacher.name}
+              </Link>
+            )}
 
             <div className="mt-6 flex flex-wrap items-center gap-3 text-xs text-slate-400">
               <span className="flex items-center gap-1.5">
