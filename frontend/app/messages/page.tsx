@@ -1,13 +1,13 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { Suspense, useEffect, useMemo, useRef, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import { Paperclip, Link2, Send, Image as ImageIcon, MessageCircle, Search, X, FileText } from "lucide-react"
 import AppShell from "@/components/layout/AppShell"
 import { useAuth } from "@/providers/AuthProvider"
 import { messages, messageFileUrl, type DirectMessage, type MessageContact } from "@/lib/lms"
 
-export default function MessagesPage() {
+function MessagesContent() {
   const { user } = useAuth()
   const params = useSearchParams()
   const requestedUserId = Number(params.get("userId"))
@@ -175,5 +175,13 @@ export default function MessagesPage() {
         </div>
       </div>
     </AppShell>
+  )
+}
+
+export default function MessagesPage() {
+  return (
+    <Suspense fallback={<div className="mx-auto max-w-7xl p-8 text-sm text-slate-500">Loading messages...</div>}>
+      <MessagesContent />
+    </Suspense>
   )
 }
