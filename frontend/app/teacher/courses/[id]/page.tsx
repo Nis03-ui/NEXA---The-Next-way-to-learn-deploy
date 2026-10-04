@@ -2451,7 +2451,6 @@ export default function TeacherCoursePage() {
           </Modal>
         )}
       </div>
-      </motion.div>
     </AppShell>
   )
 }
