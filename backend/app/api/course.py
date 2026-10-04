@@ -28,6 +28,7 @@ async def create_course(
         title=payload.title,
         description=payload.description,
         subject=payload.subject,
+        thumbnail_url=payload.thumbnail_url,
         teacher_id=user.id,
         published=False,
     )
@@ -71,6 +72,7 @@ async def get_my_enrolled_courses(
             title=course.title,
             description=course.description,
             subject=course.subject,
+            thumbnail_url=course.thumbnail_url,
             teacher_id=course.teacher_id,
             published=course.published,
             created_at=course.created_at,
@@ -106,6 +108,7 @@ async def get_admin_course_overview(
             title=course.title,
             description=course.description,
             subject=course.subject,
+            thumbnail_url=course.thumbnail_url,
             teacher_id=course.teacher_id,
             teacher_name=teacher.name,
             teacher_email=teacher.email,
