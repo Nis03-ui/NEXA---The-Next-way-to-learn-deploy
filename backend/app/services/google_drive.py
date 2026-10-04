@@ -31,7 +31,7 @@ def _media_type(filename: str, content_type: str | None) -> str:
     return content_type or "application/octet-stream"
 
 
-async def upload_file(
+def upload_file(
     content: bytes,
     filename: str,
     content_type: str | None = None,
@@ -55,7 +55,7 @@ async def upload_file(
     return result["id"]
 
 
-async def download_file(file_id: str) -> tuple[bytes, str]:
+def download_file(file_id: str) -> tuple[bytes, str]:
     service = _drive_service()
     metadata = service.files().get(
         fileId=file_id,
@@ -77,7 +77,7 @@ async def download_file(file_id: str) -> tuple[bytes, str]:
     return buffer.getvalue(), metadata.get("mimeType", "application/octet-stream")
 
 
-async def delete_file(file_id: str) -> None:
+def delete_file(file_id: str) -> None:
     service = _drive_service()
     service.files().delete(
         fileId=file_id,
