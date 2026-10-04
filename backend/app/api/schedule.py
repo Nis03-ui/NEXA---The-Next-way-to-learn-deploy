@@ -17,6 +17,7 @@ from app.db.session import get_db
 from app.models.course import Course, Enrollment
 from app.models.schedule import ScheduleEvent
 from app.models.schedule_completion import ScheduleCompletion
+from app.models.admin_schedule_event import AdminScheduleEvent
 from app.models.user import Role, User
 from app.schemas.schedule import (
     ScheduleEventCreate,
@@ -72,6 +73,22 @@ async def verify_enrollment(
             status_code=403,
             detail="You are not enrolled in this course",
         )
+
+
+
+# ---------------------------------------------------------
+# COLLEGE-WIDE EVENTS FOR STUDENTS AND TEACHERS
+# ---------------------------------------------------------
+
+@router.get("/college")
+async def get_college_schedule(
+    user: User = Depends(require_roles(Role.STUDENT, Role.TEACHER)),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(AdminScheduleEvent).order_by(AdminScheduleEvent.start_time.asc())
+    )
+    return result.scalars().all()
 
 
 # ---------------------------------------------------------
