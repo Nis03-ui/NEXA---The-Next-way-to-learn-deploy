@@ -3,6 +3,7 @@ from fastapi.responses import Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from pathlib import Path
+import mimetypes
 from uuid import uuid4
 import asyncio
 import logging
@@ -186,8 +187,11 @@ async def get_material_file(
     except Exception as exc:
         raise HTTPException(status_code=404, detail="Material file is no longer available") from exc
 
-    suffix = Path(material.title or "course-material").suffix
-    filename = f"{material.title or 'course-material'}{suffix}"
+    filename = material.title or "course-material"
+    if not Path(filename).suffix:
+        extension = mimetypes.guess_extension(mime_type)
+        if extension:
+            filename = f"{filename}{extension}"
     return Response(
         content=content,
         media_type=mime_type,
