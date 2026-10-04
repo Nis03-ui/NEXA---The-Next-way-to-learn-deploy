@@ -281,16 +281,44 @@ async def resend_verification(
         db=db,
     )
 
-    await db.commit()
+    verification_url = (
+        f"{settings.frontend_origin}/verify-email"
+        f"?token={verification_token}"
+    )
 
-    # Development only.
-    # Production will send this token through email.
+    try:
+        send_email(
+            to_email=user.email,
+            subject="Verify your NEXA email address",
+            html_content=f"""
+            <html>
+              <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #0f172a;">
+                <div style="max-width: 560px; margin: 0 auto; padding: 32px;">
+                  <h1>NEXA</h1>
+                  <p>Hello {user.name},</p>
+                  <p>Please verify your email address to activate your NEXA account.</p>
+                  <p>
+                    <a href="{verification_url}"
+                       style="display:inline-block;padding:12px 20px;background:#0f172a;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">
+                      Verify my email
+                    </a>
+                  </p>
+                  <p>This link expires after {settings.email_verification_expire_minutes} minutes.</p>
+                </div>
+              </body>
+            </html>
+            """,
+        )
+        await db.commit()
+    except Exception as exc:
+        await db.rollback()
+        print(f"[EMAIL VERIFICATION ERROR] {type(exc).__name__}: {exc}")
+
     return VerificationResponse(
         message=(
             "If the account exists and is not verified, "
-            "a verification token has been created."
+            "a verification email has been sent."
         ),
-        verification_token=verification_token,
     )
 
 
@@ -335,25 +363,55 @@ async def register(
     db.add(user)
     await db.flush()
 
-    refresh_token, _ = await create_auth_session(
+    verification_token = await create_email_verification_token(
         user=user,
         db=db,
-        user_agent=request.headers.get("user-agent"),
-        ip_address=(
-            request.client.host
-            if request.client
-            else None
-        ),
     )
 
-    access_token = create_token(user.id)
+    verification_url = (
+        f"{settings.frontend_origin}/verify-email"
+        f"?token={verification_token}"
+    )
 
-    await db.commit()
+    try:
+        send_email(
+            to_email=user.email,
+            subject="Verify your NEXA email address",
+            html_content=f"""
+            <html>
+              <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #0f172a;">
+                <div style="max-width: 560px; margin: 0 auto; padding: 32px;">
+                  <h1 style="margin-bottom: 8px;">NEXA</h1>
+                  <p>Hello {user.name},</p>
+                  <p>Thanks for creating your NEXA account. Please verify your email address before signing in.</p>
+                  <p>
+                    <a href="{verification_url}"
+                       style="display:inline-block;padding:12px 20px;background:#0f172a;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">
+                      Verify my email
+                    </a>
+                  </p>
+                  <p>This link expires after {settings.email_verification_expire_minutes} minutes.</p>
+                  <p>If you did not create this account, you can safely ignore this email.</p>
+                  <p>— NEXA<br />The Next Way to Learn</p>
+                </div>
+              </body>
+            </html>
+            """,
+        )
+        await db.commit()
+    except Exception as exc:
+        await db.rollback()
+        print(f"[EMAIL VERIFICATION ERROR] {type(exc).__name__}: {exc}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="We could not send the verification email. Please try again.",
+        ) from exc
+
     await db.refresh(user)
 
     return TokenResponse(
-        access_token=access_token,
-        refresh_token=refresh_token,
+        access_token="",
+        refresh_token="",
         user=user,
     )
 
@@ -386,6 +444,12 @@ async def login(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials",
+        )
+
+    if not user.email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Please verify your email address before signing in.",
         )
 
     refresh_token, _ = await create_auth_session(
