@@ -197,6 +197,7 @@ async def upload_assignment(
     )
     db.add(assignment)
     await db.flush()
+    assignment.file_url = f"/api/v1/assignments/{assignment.id}/file"
     await notify_course_students(
         db=db,
         course_id=course_id,
