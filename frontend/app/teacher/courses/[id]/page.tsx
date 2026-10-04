@@ -1,6 +1,7 @@
 "use client"
 
 import { FormEvent, useEffect, useMemo, useState } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 import Link from "next/link"
 import { useParams, useSearchParams } from "next/navigation"
 import {
@@ -2450,6 +2451,7 @@ export default function TeacherCoursePage() {
           </Modal>
         )}
       </div>
+      </motion.div>
     </AppShell>
   )
 }
