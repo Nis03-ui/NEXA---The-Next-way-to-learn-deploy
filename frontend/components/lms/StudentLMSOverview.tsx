@@ -186,6 +186,22 @@ export default function StudentLMSOverview() {
         </div>
       </div>
 
+      {/* Snapshot */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {[
+          ["Enrolled", myCourses.length, "Active courses"],
+          ["Assignments", upcomingAssignments.length, "Upcoming tasks"],
+          ["Sessions", upcomingEvents.length, "Upcoming events"],
+          ["Unread", unread.length, "New updates"],
+        ].map(([label, value, note]) => (
+          <div key={label as string} className="rounded-2xl border border-slate-200 bg-white p-4">
+            <p className="text-[11px] font-semibold text-slate-500">{label as string}</p>
+            <p className="mt-1.5 text-2xl font-black tracking-tight text-slate-950">{value as number}</p>
+            <p className="mt-0.5 text-[10px] text-slate-400">{note as string}</p>
+          </div>
+        ))}
+      </div>
+
       {/* Courses */}
       <div>
         <div className="mb-4 flex items-end justify-between">
