@@ -36,6 +36,7 @@ const studentLinks: NavItem[] = [
   { name: "AI Tutor", href: "/tutor", icon: MessageSquare },
   { name: "Quizzes", href: "/quizzes", icon: BookOpen },
   { name: "Schedule", href: "/schedule", icon: CalendarDays },
+  { name: "Messages", href: "/messages", icon: MessagesSquare },
 ]
 
 const teacherLinks: NavItem[] = [
