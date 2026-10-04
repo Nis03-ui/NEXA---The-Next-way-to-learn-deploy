@@ -1,6 +1,8 @@
 "use client"
 
 import Link from "next/link"
+import AnalyticsChart from "@/components/dashboard/AnalyticsChart"
+
 import { useEffect, useState } from "react"
 import {
   ArrowRight,
@@ -200,6 +202,39 @@ export default function StudentLMSOverview() {
             <p className="mt-0.5 text-[10px] text-slate-400">{note as string}</p>
           </div>
         ))}
+      </div>
+
+      {/* Learning analytics */}
+      <div className="grid gap-5 lg:grid-cols-2">
+        <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6">
+          <div className="mb-4">
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Your activity</p>
+            <h2 className="mt-2 text-xl font-black text-slate-950">Assignments by course</h2>
+            <p className="mt-1 text-xs text-slate-500">Published assignments available across your enrolled courses.</p>
+          </div>
+          {myCourses.length === 0 ? (
+            <div className="grid h-64 place-items-center rounded-2xl bg-slate-50 text-xs text-slate-400">Enroll in a course to see your learning analytics.</div>
+          ) : (
+            <AnalyticsChart
+              labels={myCourses.map((course) => course.title)}
+              values={myCourses.map((course) => courseAssignments.filter((item) => item.course_id === course.id && item.published).length)}
+              label="Published assignments"
+            />
+          )}
+        </div>
+
+        <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6">
+          <div className="mb-4">
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Learning load</p>
+            <h2 className="mt-2 text-xl font-black text-slate-950">Upcoming work</h2>
+            <p className="mt-1 text-xs text-slate-500">Live counts from your current assignments and schedule.</p>
+          </div>
+          <AnalyticsChart
+            labels={["Assignments", "Sessions", "Notifications"]}
+            values={[upcomingAssignments.length, upcomingEvents.length, unread.length]}
+            label="Current items"
+          />
+        </div>
       </div>
 
       {/* Courses */}
