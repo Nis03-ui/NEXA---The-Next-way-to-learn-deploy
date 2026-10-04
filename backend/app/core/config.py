@@ -30,7 +30,9 @@ class Settings(BaseSettings):
 
     upload_dir: str = "uploads"
 
-    google_drive_service_account_json: str | None = None
+    google_drive_client_id: str | None = None
+    google_drive_client_secret: str | None = None
+    google_drive_refresh_token: str | None = None
     google_drive_folder_id: str | None = None
 
     gemini_api_key: str | None = None
