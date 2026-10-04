@@ -6,6 +6,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from app.core.security import current_user, require_roles
+from app.core.config import settings
 from app.db.session import get_db
 from app.services.notification import notify_course_students
 from app.models.course import Course, Enrollment
@@ -96,7 +97,7 @@ async def upload_material(
         raise HTTPException(status_code=400, detail="A file is required")
 
     max_size = 10 * 1024 * 1024
-    storage_dir = Path("uploads") / "materials" / str(course_id)
+    storage_dir = Path(settings.upload_dir) / "materials" / str(course_id)
     storage_dir.mkdir(parents=True, exist_ok=True)
     suffix = Path(file.filename).suffix
     safe_name = f"{uuid4().hex}{suffix}"
@@ -170,7 +171,7 @@ async def get_material_file(
     if user.role == Role.STUDENT and not material.published:
         raise HTTPException(status_code=404, detail="Material file not found")
 
-    file_path = Path(material.file_url.lstrip("/"))
+    file_path = Path(settings.upload_dir) / material.file_url.lstrip("/")
     if not file_path.is_file():
         raise HTTPException(status_code=404, detail="Material file is no longer available")
 
