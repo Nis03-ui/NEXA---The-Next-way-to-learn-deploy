@@ -309,9 +309,32 @@ function ProfileContent() {
 
             <div className="grid gap-5 border-t border-slate-100 pt-6 sm:grid-cols-2">
               <div className="sm:col-span-2">
-                <label htmlFor="profile-avatar" className="mb-2 block text-sm font-semibold text-slate-900">Profile photo URL</label>
-                <input id="profile-avatar" type="url" value={avatarUrl} onChange={e => setAvatarUrl(e.target.value)} disabled={saving} placeholder="https://..." className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-slate-100" />
-                <p className="mt-1.5 text-xs text-slate-400">Use a public image URL. Upload storage can be connected later without changing the profile model.</p>
+                <label htmlFor="profile-avatar" className="mb-2 block text-sm font-semibold text-slate-900">Profile photo</label>
+                <input
+                  id="profile-avatar"
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  disabled={saving}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (!file) return
+                    if (file.size > 2 * 1024 * 1024) {
+                      setError("Profile photo must be 2 MB or smaller.")
+                      e.currentTarget.value = ""
+                      return
+                    }
+                    const reader = new FileReader()
+                    reader.onload = () => {
+                      if (typeof reader.result === "string") {
+                        setAvatarUrl(reader.result)
+                        setError("")
+                      }
+                    }
+                    reader.readAsDataURL(file)
+                  }}
+                  className="block h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-1 file:text-xs file:font-semibold"
+                />
+                <p className="mt-1.5 text-xs text-slate-400">PNG, JPG, WEBP or GIF · maximum 2 MB. The image is stored with your NEXA profile.</p>
               </div>
               <div className="sm:col-span-2">
                 <label htmlFor="profile-bio" className="mb-2 block text-sm font-semibold text-slate-900">Bio</label>
