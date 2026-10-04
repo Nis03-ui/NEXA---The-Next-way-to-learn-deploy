@@ -12,6 +12,7 @@ from app.api import course as course_api
 from app.api import course_material as course_material_api
 from app.api import assignment as assignment_api
 from app.api import schedule as schedule_api
+from app.api import message as message_api
 from app.api import notification as notification_api
 from app.core.config import settings
 from app.core.exceptions import (
@@ -145,6 +146,7 @@ app.include_router(
     prefix=API_PREFIX,
 )
 app.include_router(notification_api.router, prefix=API_PREFIX)
+app.include_router(message_api.router, prefix=API_PREFIX)
 app.include_router(
     notification_api.router,
     prefix=API_PREFIX,
