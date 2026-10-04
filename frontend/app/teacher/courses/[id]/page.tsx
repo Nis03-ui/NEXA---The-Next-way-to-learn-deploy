@@ -970,6 +970,26 @@ export default function TeacherCoursePage() {
     }
   }
 
+  const openSubmissionFile = async (submission: AssignmentSubmission, download = false) => {
+    if (!submission.file_url) return
+    const token = localStorage.getItem("nexa_token")
+    if (!token) { setError("You are not authenticated."); return }
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"}/assignments/${submission.assignment_id}/submissions/${submission.id}/file${download ? "?download=true" : ""}`, { headers: { Authorization: `Bearer ${token}` } })
+      if (!response.ok) throw new Error(`Unable to open submission (${response.status})`)
+      const url = URL.createObjectURL(await response.blob())
+      if (download) {
+        const a = document.createElement("a"); a.href = url; a.download = submission.file_url.split("/").pop() || "submission"; document.body.appendChild(a); a.click(); a.remove()
+        setTimeout(() => URL.revokeObjectURL(url), 1000)
+      } else {
+        window.open(url, "_blank", "noopener,noreferrer")
+        setTimeout(() => URL.revokeObjectURL(url), 60000)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to open submission.")
+    }
+  }
+
   const gradeSubmission = async (submission: AssignmentSubmission) => {
     if (!selectedAssignment) return
 
@@ -2400,16 +2420,17 @@ export default function TeacherCoursePage() {
                         </p>
                       </div>
 
-                      {submission.external_url && (
-                        <a
-                          href={submission.external_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex min-h-11 items-center justify-center rounded-xl bg-slate-100 px-3 text-sm font-semibold text-slate-700"
-                        >
-                          Open submission
-                        </a>
-                      )}
+                      <div className="flex flex-wrap gap-2">
+                        {submission.file_url && (
+                          <>
+                            <button type="button" onClick={() => void openSubmissionFile(submission)} className="inline-flex min-h-11 items-center justify-center rounded-xl bg-slate-950 px-3 text-sm font-semibold text-white">View file</button>
+                            <button type="button" onClick={() => void openSubmissionFile(submission, true)} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 px-3 text-sm font-semibold text-slate-700">Download</button>
+                          </>
+                        )}
+                        {submission.external_url && (
+                          <a href={submission.external_url} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center justify-center rounded-xl bg-slate-100 px-3 text-sm font-semibold text-slate-700">Open link</a>
+                        )}
+                      </div>
                     </div>
 
                     <div className="mt-4 grid gap-3 sm:grid-cols-[120px_1fr_auto]">
