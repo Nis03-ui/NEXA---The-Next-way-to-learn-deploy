@@ -315,7 +315,8 @@ export default function CoursePage() {
         </div>
 
         {/* Content */}
-        <AnimatePresence mode="wait">\n        {activeTab === "overview" && (
+        <AnimatePresence mode="wait">
+        {activeTab === "overview" && (
           <Overview
             course={course}
             materials={courseMaterials}
@@ -341,6 +342,7 @@ export default function CoursePage() {
         {activeTab === "schedule" && (
           <ScheduleList items={upcomingEvents} />
         )}
+        </AnimatePresence>
       </motion.div>
     </AppShell>
   )
