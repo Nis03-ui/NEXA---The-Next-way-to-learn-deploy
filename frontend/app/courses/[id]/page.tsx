@@ -33,7 +33,8 @@ import {
   type CourseMaterial,
   type ScheduleEvent,
 } from "@/lib/lms"
-import { api } from "@/lib/api"
+import { api, auth } from "@/lib/api"
+import { clearAuth, getRefreshToken, getToken, setAuth } from "@/lib/auth/storage"
 
 type Tab = "overview" | "materials" | "assignments" | "quizzes" | "schedule"
 
@@ -904,12 +905,32 @@ async function fetchQuizzes(): Promise<QuizSummary[]> {
 }
 
 async function openProtectedFile(url: string, download: boolean, filename: string) {
-  const token = localStorage.getItem("nexa_token")
-  if (!token) throw new Error("You are not authenticated")
+  let token = getToken()
+  if (!token) throw new Error("Your session has expired. Please sign in again.")
 
-  const response = await fetch(url, {
+  let response = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
   })
+
+  if (response.status === 401) {
+    const refreshToken = getRefreshToken()
+    if (!refreshToken) {
+      clearAuth()
+      throw new Error("Your session has expired. Please sign in again.")
+    }
+
+    try {
+      const refreshed = await auth.refresh(refreshToken)
+      setAuth(refreshed.access_token, refreshed.refresh_token, refreshed.user)
+      token = refreshed.access_token
+      response = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+    } catch {
+      clearAuth()
+      throw new Error("Your session has expired. Please sign in again.")
+    }
+  }
 
   if (!response.ok) {
     throw new Error(`Unable to open file (${response.status})`)
