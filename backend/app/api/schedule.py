@@ -92,12 +92,14 @@ async def create_event(
     course = await get_course(course_id, db)
     await verify_teacher(course, user)
 
+    values = data.model_dump()
+    values["start_time"] = normalize_datetime(data.start_time)
+    values["end_time"] = normalize_datetime(data.end_time)
+
     event = ScheduleEvent(
         course_id=course_id,
         created_by=user.id,
-        **data.model_dump(),
-        start_time=normalize_datetime(data.start_time),
-        end_time=normalize_datetime(data.end_time),
+        **values,
     )
 
     db.add(event)
