@@ -39,7 +39,7 @@ class UserOut(BaseModel):
 class ProfileUpdateRequest(BaseModel):
     name: str | None = Field(default=None, min_length=2, max_length=120)
     email: EmailStr | None = None
-    avatar_url: str | None = Field(default=None, max_length=1000)
+    avatar_url: str | None = Field(default=None, max_length=3_000_000)
     bio: str | None = Field(default=None, max_length=2000)
     linkedin_url: str | None = Field(default=None, max_length=500)
     github_url: str | None = Field(default=None, max_length=500)
