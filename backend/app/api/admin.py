@@ -9,6 +9,7 @@ from app.models.chat import ChatSession
 from app.models.content import Content
 from app.models.course import Course
 from app.models.quiz import Quiz
+from app.models.notification import Notification
 from app.models.user import Role, User
 from app.schemas.admin import AdminUserOut, RoleUpdate
 
@@ -191,3 +192,31 @@ async def delete_user(
     return {
         "message": "User deleted successfully"
     }
+
+
+@router.get("/announcements")
+async def get_announcements(
+    _: User = Depends(require_roles(Role.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(Notification)
+        .where(Notification.type == "ANNOUNCEMENT")
+        .order_by(Notification.created_at.desc())
+    )
+    rows = result.scalars().all()
+
+    grouped = {}
+    for row in rows:
+        key = (row.title, row.message, row.created_at.replace(second=0, microsecond=0))
+        if key not in grouped:
+            grouped[key] = {
+                "id": row.id,
+                "title": row.title,
+                "message": row.message,
+                "created_at": row.created_at,
+                "recipients": 0,
+            }
+        grouped[key]["recipients"] += 1
+
+    return list(grouped.values())
