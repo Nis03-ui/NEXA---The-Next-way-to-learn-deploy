@@ -164,7 +164,7 @@ function ProfileContent() {
     <div className="mx-auto w-full max-w-4xl">
       <div className="mb-8">
         <Link
-          href="/dashboard"
+          href={user.role === "ADMIN" ? "/admin" : user.role === "TEACHER" ? "/teacher/dashboard" : "/dashboard"}
           className="mb-5 inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition hover:text-slate-900"
         >
           <ArrowLeft size={16} />
@@ -421,6 +421,23 @@ function ProfileContent() {
                 </div>
               </div>
             </div>
+
+            {(user.bio || user.linkedin_url || user.github_url || user.portfolio_url || user.twitter_url) && (
+              <div className="border-t border-slate-100 px-5 py-6 sm:px-8">
+                {user.bio && (
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">About</p>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">{user.bio}</p>
+                  </div>
+                )}
+                <div className="mt-5 flex flex-wrap gap-2">
+                  {user.linkedin_url && <a href={user.linkedin_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200"><Linkedin size={14}/> LinkedIn</a>}
+                  {user.github_url && <a href={user.github_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200"><Github size={14}/> GitHub</a>}
+                  {user.portfolio_url && <a href={user.portfolio_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200"><Globe2 size={14}/> Portfolio</a>}
+                  {user.twitter_url && <a href={user.twitter_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200"><Twitter size={14}/> X / Twitter</a>}
+                </div>
+              </div>
+            )}
 
             <div className="border-t border-slate-100 bg-slate-50/50 px-5 py-5 sm:px-8">
               <button
