@@ -447,7 +447,7 @@ export default function TeacherPage() {
                       Delete Course
                     </button>
                   </div>
-                </article>
+                </motion.article>
               ))}
             </div>
           )}
