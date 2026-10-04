@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from datetime import datetime
 
 
 def normalize_datetime(value):
@@ -15,6 +16,7 @@ from app.core.security import current_user, require_roles
 from app.db.session import get_db
 from app.models.course import Course, Enrollment
 from app.models.schedule import ScheduleEvent
+from app.models.schedule_completion import ScheduleCompletion
 from app.models.user import Role, User
 from app.schemas.schedule import (
     ScheduleEventCreate,
