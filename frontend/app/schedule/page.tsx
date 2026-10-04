@@ -1,6 +1,7 @@
 "use client"
 
 import { FormEvent, useEffect, useMemo, useState } from "react"
+import { motion } from "framer-motion"
 import {
   CalendarDays,
   Clock3,
