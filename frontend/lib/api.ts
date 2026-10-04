@@ -313,7 +313,7 @@ export async function api<T>(
 
 export const auth = {
   register: (data: RegisterData) =>
-    api<LoginResponse>("/auth/register", {
+    api<{ message: string }>("/auth/register", {
       method: "POST",
       body: JSON.stringify(data),
     }),
