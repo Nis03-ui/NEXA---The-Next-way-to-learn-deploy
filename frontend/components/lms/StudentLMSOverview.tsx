@@ -4,6 +4,7 @@ import Link from "next/link"
 import AnalyticsChart from "@/components/dashboard/AnalyticsChart"
 
 import { useEffect, useState } from "react"
+import { motion } from "framer-motion"
 import {
   ArrowRight,
   Bell,
@@ -153,7 +154,7 @@ export default function StudentLMSOverview() {
   }
 
   return (
-    <section className="space-y-7">
+    <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="space-y-7">
       {/* LMS Hero */}
       <div className="relative overflow-hidden rounded-3xl bg-slate-950 p-6 text-white sm:p-8">
         <div
@@ -178,13 +179,13 @@ export default function StudentLMSOverview() {
             </p>
           </div>
 
-          <Link
+          <motion.div whileTap={{ scale: 0.97 }}><Link
             href="/courses"
             className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-white px-5 text-sm font-bold text-slate-950 transition hover:bg-slate-100"
           >
             Browse courses
             <ArrowRight size={16} />
-          </Link>
+          </Link></motion.div>
         </div>
       </div>
 
@@ -272,9 +273,14 @@ export default function StudentLMSOverview() {
           </div>
         ) : (
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {myCourses.slice(0, 6).map((course) => (
-              <Link
+            {myCourses.slice(0, 6).map((course, index) => (
+              <motion.div
                 key={course.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: Math.min(index * 0.04, 0.2), duration: 0.3 }}
+                whileHover={{ y: -3 }}
+              ><Link
                 href={`/courses/${course.id}`}
                 className="group rounded-2xl border border-slate-200 bg-white p-5 transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-lg hover:shadow-slate-900/5"
               >
@@ -306,7 +312,7 @@ export default function StudentLMSOverview() {
                     className="text-slate-400 transition group-hover:translate-x-1 group-hover:text-slate-950"
                   />
                 </div>
-              </Link>
+              </Link></motion.div>
             ))}
           </div>
         )}
@@ -472,6 +478,6 @@ export default function StudentLMSOverview() {
         <span>•</span>
         <span>{unread.length} unread notification{unread.length === 1 ? "" : "s"}</span>
       </div>
-    </section>
+    </motion.section>
   )
 }
