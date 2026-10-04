@@ -257,6 +257,16 @@ export const assignments = {
       },
     ),
 
+  submitFile: (assignmentId: number, file: File, externalUrl?: string) => {
+    const formData = new FormData()
+    formData.append("file", file)
+    if (externalUrl?.trim()) formData.append("external_url", externalUrl.trim())
+    return api<AssignmentSubmission>(
+      `/assignments/${assignmentId}/submit-file`,
+      { method: "POST", body: formData },
+    )
+  },
+
   getSubmission: (assignmentId: number) =>
     api<AssignmentSubmission | null>(
       `/assignments/${assignmentId}/submission`,
