@@ -238,6 +238,11 @@ export function courseMaterialFileUrl(courseId: number, materialId: number, down
   return base + "/courses/" + courseId + "/materials/" + materialId + "/file" + (download ? "?download=true" : "")
 }
 
+export function assignmentFileUrl(assignmentId: number, download = false) {
+  const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"
+  return base + "/assignments/" + assignmentId + "/file" + (download ? "?download=true" : "")
+}
+
 export const assignments = {
   list: (courseId: number) =>
     api<Assignment[]>(`/courses/${courseId}/assignments`),
