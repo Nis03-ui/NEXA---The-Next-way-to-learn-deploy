@@ -1610,7 +1610,8 @@ export default function TeacherCoursePage() {
                         <Trash2 className="h-4 w-4" />
                       )}
                       Remove student
-                    </button>
+                      </button>
+                    </div>
                   </article>
                 ))}
               </div>
