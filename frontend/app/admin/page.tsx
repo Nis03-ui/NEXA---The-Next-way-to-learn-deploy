@@ -268,6 +268,23 @@ export default function AdminPage() {
             loading={loading}
             detail="Available assessments"
           />
+          <StatCard
+            icon={<BookOpen size={19} />}
+            label="Courses"
+            value={stats?.total_courses}
+            loading={loading}
+            detail="Platform courses"
+          />
+
+          <StatCard
+            icon={<Activity size={19} />}
+            label="AI Sessions"
+            value={stats?.chat_sessions}
+            loading={loading}
+            detail="Tutor conversations"
+          />
+
+
         </section>
 
         {/* Main actions */}
