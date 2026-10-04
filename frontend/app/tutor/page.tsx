@@ -85,6 +85,37 @@ const STUDENT_ACTIONS: QuickAction[] = [
   },
 ]
 
+const ADMIN_ACTIONS: QuickAction[] = [
+  {
+    title: "Review a concept",
+    description: "Explore a topic before making decisions.",
+    prompt: "Give me a concise but rigorous overview of a university topic, including key concepts and practical implications.",
+    mode: "explain",
+    icon: Lightbulb,
+  },
+  {
+    title: "Analyze learning activity",
+    description: "Understand common student learning patterns.",
+    prompt: "Help me reason about how to improve student learning outcomes in an LMS, including useful metrics and interventions.",
+    mode: "study",
+    icon: Target,
+  },
+  {
+    title: "Draft an announcement",
+    description: "Write a clear academic announcement.",
+    prompt: "Draft a professional college-wide academic announcement about an upcoming examination or important learning activity.",
+    mode: "normal",
+    icon: FileText,
+  },
+  {
+    title: "Ask NEXA",
+    description: "Use NEXA for general academic help.",
+    prompt: "Help me understand an academic or technology topic clearly and concisely.",
+    mode: "normal",
+    icon: Sparkles,
+  },
+]
+
 const TEACHER_ACTIONS: QuickAction[] = [
   {
     title: "Create a lesson plan",
@@ -124,6 +155,7 @@ export default function TutorPage() {
   const { user } = useAuth()
 
   const isTeacher = user?.role === "TEACHER"
+  const isAdmin = user?.role === "ADMIN"
 
   const [messages, setMessages] = useState<UIMessage[]>([])
   const [input, setInput] = useState("")
@@ -165,9 +197,11 @@ export default function TutorPage() {
         ? "responding"
         : "idle"
 
-  const quickActions = isTeacher
-    ? TEACHER_ACTIONS
-    : STUDENT_ACTIONS
+  const quickActions = isAdmin
+    ? ADMIN_ACTIONS
+    : isTeacher
+      ? TEACHER_ACTIONS
+      : STUDENT_ACTIONS
 
   const handleNoteUpload = async (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -505,19 +539,24 @@ export default function TutorPage() {
   const isEmpty =
     messages.length === 0
 
-  const greeting = isTeacher
-    ? "What are you teaching today?"
-    : "What do you want to learn?"
+  const greeting = isAdmin
+    ? "What do you want to explore?"
+    : isTeacher
+      ? "What are you teaching today?"
+      : "What do you want to learn?"
 
-  const description = isTeacher
-    ? "Plan lessons, create assessments, explain topics, or work with your teaching material."
-    : "Ask questions, understand difficult concepts, solve problems, or study directly from your course material."
+  const description = isAdmin
+    ? "Use NEXA for academic insight, planning, communication, and general platform support."
+    : isTeacher
+      ? "Plan lessons, create assessments, explain topics, or work with your teaching material."
+      : "Ask questions, understand difficult concepts, solve problems, or study directly from your course material."
 
   return (
     <AppShell
       allowedRoles={[
         "STUDENT",
         "TEACHER",
+        "ADMIN",
       ]}
     >
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className="mx-auto h-full w-full max-w-[1600px]">
