@@ -27,6 +27,12 @@ export type User = {
   name: string
   email: string
   role: Role
+  avatar_url?: string | null
+  bio?: string | null
+  linkedin_url?: string | null
+  github_url?: string | null
+  portfolio_url?: string | null
+  twitter_url?: string | null
 }
 
 export type AuthUser = User
@@ -396,6 +402,12 @@ export const auth = {
 export type ProfileUpdateRequest = {
   name?: string
   email?: string
+  avatar_url?: string
+  bio?: string
+  linkedin_url?: string
+  github_url?: string
+  portfolio_url?: string
+  twitter_url?: string
 }
 
 export const users = {
