@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from pathlib import Path
 from uuid import uuid4
 import asyncio
+import logging
 
 from app.core.security import current_user, require_roles
 from app.core.config import settings
@@ -19,6 +20,8 @@ from app.schemas.course_material import (
     CourseMaterialResponse,
     CourseMaterialUpdate,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/courses",
@@ -111,6 +114,7 @@ async def upload_material(
             upload_file, content, drive_name, file.content_type
         )
     except Exception as exc:
+        logger.exception("Google Drive upload failed for course material upload")
         raise HTTPException(
             status_code=503,
             detail="Unable to store material file. Please try again.",
