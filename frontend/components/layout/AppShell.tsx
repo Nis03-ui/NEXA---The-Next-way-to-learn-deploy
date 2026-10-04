@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation"
 
 import Sidebar from "@/components/dashboard/Sidebar"
 import Topbar from "@/components/dashboard/Topbar"
+import MobileNav from "@/components/dashboard/MobileNav"
 import { useAuth } from "@/providers/AuthProvider"
 import type { Role } from "@/lib/api"
 
@@ -27,13 +28,8 @@ export default function AppShell({
   } = useAuth()
 
   useEffect(() => {
-    if (loading) {
-      return
-    }
+    if (loading) return
 
-    /*
-     * Not authenticated.
-     */
     if (!isAuthenticated || !user) {
       router.replace(
         `/login?next=${encodeURIComponent(pathname)}`,
@@ -41,9 +37,6 @@ export default function AppShell({
       return
     }
 
-    /*
-     * Role-protected route.
-     */
     if (
       allowedRoles &&
       !allowedRoles.includes(user.role)
@@ -65,36 +58,24 @@ export default function AppShell({
     router,
   ])
 
-  /*
-   * Don't render protected content while
-   * authentication is being resolved.
-   */
   if (loading || !isAuthenticated || !user) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50">
         <div className="flex flex-col items-center gap-3">
-
           <div className="grid h-11 w-11 place-items-center rounded-xl bg-slate-950 text-sm font-black text-white shadow-sm">
             N
           </div>
-
           <div className="h-1.5 w-20 overflow-hidden rounded-full bg-slate-200">
             <div className="h-full w-1/2 animate-pulse rounded-full bg-slate-900" />
           </div>
-
           <p className="text-xs font-medium text-slate-400">
             Loading NEXA...
           </p>
-
         </div>
       </div>
     )
   }
 
-  /*
-   * Prevent a brief flash of unauthorized
-   * content before the redirect executes.
-   */
   if (
     allowedRoles &&
     !allowedRoles.includes(user.role)
@@ -110,19 +91,17 @@ export default function AppShell({
 
   return (
     <div className="min-h-screen bg-slate-50">
-
       <Sidebar />
 
       <div className="lg:ml-64">
-
         <Topbar />
 
-        <main className="min-h-[calc(100vh-4rem)] overflow-x-hidden p-4 sm:p-6 lg:p-8">
+        <main className="min-h-[calc(100vh-4rem)] overflow-x-hidden px-3 pb-24 pt-4 sm:p-6 lg:p-8 lg:pb-8">
           {children}
         </main>
-
       </div>
 
+      <MobileNav />
     </div>
   )
 }
