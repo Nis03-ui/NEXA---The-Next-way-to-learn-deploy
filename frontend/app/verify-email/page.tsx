@@ -5,10 +5,11 @@ import { CheckCircle2, Loader2, MailCheck, XCircle } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import { motion } from "framer-motion"
+import { Suspense } from "react"
 
 import { auth } from "@/lib/api"
 
-export default function VerifyEmailPage() {
+function VerifyEmailContent() {
   const searchParams = useSearchParams()
   const token = searchParams.get("token")
   const email = searchParams.get("email") || ""
@@ -125,5 +126,22 @@ export default function VerifyEmailPage() {
         </motion.section>
       </div>
     </main>
+  )
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={
+      <main className="min-h-screen bg-slate-950 px-4 py-10 text-white">
+        <div className="mx-auto flex min-h-[80vh] max-w-xl items-center justify-center">
+          <div className="w-full rounded-3xl border border-white/10 bg-white/[0.06] p-8 text-center shadow-2xl backdrop-blur-xl">
+            <Loader2 className="mx-auto animate-spin" size={28} />
+            <p className="mt-4 text-sm text-slate-300">Loading verification…</p>
+          </div>
+        </div>
+      </main>
+    }>
+      <VerifyEmailContent />
+    </Suspense>
   )
 }
