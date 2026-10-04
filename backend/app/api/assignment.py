@@ -23,6 +23,14 @@ from app.services.notification import notify_course_students
 router = APIRouter(tags=["Assignments"])
 
 
+def normalize_datetime(value):
+    """Store timezone-aware API datetimes as UTC-naive values for TIMESTAMP WITHOUT TIME ZONE columns."""
+    if value is not None and value.tzinfo is not None:
+        from datetime import timezone
+        return value.astimezone(timezone.utc).replace(tzinfo=None)
+    return value
+
+
 async def get_course_or_404(course_id: int, db: AsyncSession):
     course = await db.get(Course, course_id)
 
@@ -90,10 +98,14 @@ async def create_assignment(
 ):
     await check_course_teacher(course_id, user, db)
 
+    values = data.model_dump()
+    if values.get("due_date") is not None:
+        values["due_date"] = normalize_datetime(values["due_date"])
+
     assignment = Assignment(
         course_id=course_id,
         created_by=user.id,
-        **data.model_dump(),
+        **values,
     )
 
     db.add(assignment)
@@ -198,9 +210,11 @@ async def update_assignment(
             detail="Assignment not found",
         )
 
-    for field, value in data.model_dump(
-        exclude_unset=True
-    ).items():
+    values = data.model_dump(exclude_unset=True)
+    if values.get("due_date") is not None:
+        values["due_date"] = normalize_datetime(values["due_date"])
+
+    for field, value in values.items():
         setattr(assignment, field, value)
 
     await db.commit()
