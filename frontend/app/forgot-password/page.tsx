@@ -1,408 +1,124 @@
+"use client"
 
-"use client";
+import Link from "next/link"
+import { useState, type FormEvent } from "react"
+import { motion } from "framer-motion"
+import { ArrowLeft, CheckCircle2, Loader2, Mail, ShieldCheck } from "lucide-react"
+import { auth } from "@/lib/api"
 
-import { FormEvent, Suspense, useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import { Eye, EyeOff, LockKeyhole, CheckCircle2, AlertCircle } from "lucide-react";
+const emailPattern = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]{2,}$/
 
-import { auth } from "@/lib/api";
-
-function ResetPasswordForm() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-
-  const token = searchParams.get("token");
-
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-
-  const hasMinLength = password.length >= 8;
-  const hasLetter = /[A-Za-z]/.test(password);
-  const hasNumber = /\d/.test(password);
-  const passwordsMatch =
-    password.length > 0 &&
-    confirmPassword.length > 0 &&
-    password === confirmPassword;
+export default function ForgotPasswordPage() {
+  const [email, setEmail] = useState("")
+  const [error, setError] = useState("")
+  const [message, setMessage] = useState("")
+  const [loading, setLoading] = useState(false)
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+    event.preventDefault()
+    setError("")
+    setMessage("")
 
-    setError("");
+    const normalized = email.trim().toLowerCase()
 
-    if (!token) {
-      setError("This password reset link is invalid or incomplete.");
-      return;
+    if (!normalized) {
+      setError("Email address is required.")
+      return
     }
 
-    if (!hasMinLength) {
-      setError("Password must contain at least 8 characters.");
-      return;
-    }
-
-    if (!hasLetter) {
-      setError("Password must contain at least one letter.");
-      return;
-    }
-
-    if (!hasNumber) {
-      setError("Password must contain at least one number.");
-      return;
-    }
-
-    if (!passwordsMatch) {
-      setError("Passwords do not match.");
-      return;
+    if (!emailPattern.test(normalized)) {
+      setError("Enter a valid email address, such as you@example.com.")
+      return
     }
 
     try {
-      setLoading(true);
-
-      await auth.resetPassword(token, password);
-
-      setSuccess(true);
-
-      setTimeout(() => {
-        router.push("/login");
-      }, 1800);
-    } catch (err: unknown) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : "Unable to reset your password. Please try again.";
-
-      setError(message);
+      setLoading(true)
+      const response = await auth.forgotPassword(normalized)
+      setMessage(response.message)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to request a reset link.")
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
   }
 
-  if (success) {
-    return (
-      <main className="min-h-screen bg-slate-950 flex items-center justify-center px-6">
-        <div className="w-full max-w-md">
-          <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-8 text-center shadow-2xl backdrop-blur-xl">
-            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-500/10">
-              <CheckCircle2 className="h-8 w-8 text-emerald-400" />
-            </div>
-
-            <h1 className="text-2xl font-semibold text-white">
-              Password reset successful
-            </h1>
-
-            <p className="mt-3 text-sm leading-6 text-slate-400">
-              Your password has been updated successfully. Redirecting you to
-              the login page...
-            </p>
-          </div>
-        </div>
-      </main>
-    );
-  }
-
-  if (!token) {
-    return (
-      <main className="min-h-screen bg-slate-950 flex items-center justify-center px-6">
-        <div className="w-full max-w-md">
-          <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-8 text-center shadow-2xl backdrop-blur-xl">
-            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-red-500/10">
-              <AlertCircle className="h-8 w-8 text-red-400" />
-            </div>
-
-            <h1 className="text-2xl font-semibold text-white">
-              Invalid reset link
-            </h1>
-
-            <p className="mt-3 text-sm leading-6 text-slate-400">
-              This password reset link is missing its token or is no longer
-              valid.
-            </p>
-
-            <button
-              type="button"
-              onClick={() => router.push("/forgot-password")}
-              className="mt-6 w-full rounded-xl bg-white px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-200"
-            >
-              Request a new link
-            </button>
-          </div>
-        </div>
-      </main>
-    );
-  }
-
   return (
-    <main className="min-h-screen bg-slate-950 text-white">
-      <div className="min-h-screen grid lg:grid-cols-2">
-        {/* Brand panel */}
-        <section className="relative hidden overflow-hidden lg:flex">
-          <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-indigo-950/60 to-slate-950" />
-
-          <div className="absolute -left-24 -top-24 h-72 w-72 rounded-full bg-indigo-500/20 blur-3xl" />
-          <div className="absolute -bottom-24 -right-24 h-72 w-72 rounded-full bg-violet-500/20 blur-3xl" />
-
-          <div className="relative z-10 flex w-full flex-col justify-between p-12 xl:p-16">
-            <div>
-              <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white text-lg font-bold text-slate-950 shadow-lg">
-                  N
-                </div>
-
-                <div>
-                  <p className="text-lg font-bold tracking-tight">NEXA</p>
-                  <p className="text-xs text-slate-400">
-                    The Next Way to Learn
-                  </p>
-                </div>
-              </div>
+    <main className="min-h-screen bg-[#f5f7fb] px-4 py-6 sm:px-6 sm:py-10">
+      <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-5xl items-center justify-center">
+        <div className="grid w-full overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_30px_90px_-45px_rgba(15,23,42,.4)] lg:grid-cols-[.9fr_1.1fr]">
+          <div className="relative hidden overflow-hidden bg-slate-950 p-10 text-white lg:flex lg:flex-col lg:justify-between xl:p-12">
+            <div className="absolute -right-20 top-16 h-64 w-64 rounded-full bg-blue-500/20 blur-3xl" />
+            <div className="absolute -bottom-20 left-0 h-72 w-72 rounded-full bg-violet-500/15 blur-3xl" />
+            <div className="relative z-10 flex items-center gap-3">
+              <div className="grid h-11 w-11 place-items-center rounded-2xl bg-white font-black text-slate-950">N</div>
+              <div><p className="font-black">NEXA</p><p className="text-[10px] uppercase tracking-[.18em] text-slate-500">The Next Way to Learn</p></div>
             </div>
-
-            <div className="max-w-lg">
-              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-xs text-slate-300 backdrop-blur">
-                <LockKeyhole className="h-3.5 w-3.5" />
-                Secure account recovery
-              </div>
-
-              <h2 className="text-4xl font-semibold leading-tight xl:text-5xl">
-                Create a new password
-                <span className="block text-indigo-300">
-                  and get back to learning.
-                </span>
-              </h2>
-
-              <p className="mt-6 max-w-md text-base leading-7 text-slate-400">
-                Your account security matters. Choose a strong password and
-                continue your learning journey with NEXA.
-              </p>
+            <div className="relative z-10">
+              <div className="mb-5 grid h-12 w-12 place-items-center rounded-2xl border border-white/10 bg-white/10"><ShieldCheck size={22} /></div>
+              <h1 className="text-5xl font-black leading-[1] tracking-[-.05em]">Back to learning,<span className="block text-blue-300">without the stress.</span></h1>
+              <p className="mt-6 max-w-md text-sm leading-6 text-slate-400">We’ll send a secure reset link to the email connected to your NEXA account.</p>
             </div>
-
-            <p className="text-xs text-slate-500">
-              NEXA · AI-powered learning assistant
-            </p>
+            <p className="relative z-10 text-xs text-slate-600">NEXA · Secure account recovery</p>
           </div>
-        </section>
 
-        {/* Form */}
-        <section className="flex min-h-screen items-center justify-center px-6 py-12 sm:px-8">
-          <div className="w-full max-w-md">
-            {/* Mobile logo */}
-            <div className="mb-10 flex items-center gap-3 lg:hidden">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-sm font-bold text-slate-950">
-                N
+          <section className="flex items-center px-5 py-8 sm:px-10 lg:px-12">
+            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md mx-auto">
+              <Link href="/login" className="mb-8 inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-950">
+                <ArrowLeft size={16} /> Back to sign in
+              </Link>
+
+              <div className="mb-7">
+                <div className="mb-5 grid h-12 w-12 place-items-center rounded-2xl bg-slate-950 text-white"><Mail size={20} /></div>
+                <h2 className="text-3xl font-black tracking-[-.035em]">Forgot your password?</h2>
+                <p className="mt-2 text-sm leading-6 text-slate-500">Enter your account email and we’ll send a reset link if the account exists.</p>
               </div>
 
-              <div>
-                <p className="font-bold">NEXA</p>
-                <p className="text-xs text-slate-500">
-                  The Next Way to Learn
-                </p>
-              </div>
-            </div>
+              {message ? (
+                <motion.div initial={{ opacity: 0, scale: .98 }} animate={{ opacity: 1, scale: 1 }} className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+                  <div className="flex gap-3">
+                    <CheckCircle2 className="mt-0.5 shrink-0 text-emerald-600" size={20} />
+                    <div>
+                      <p className="font-bold text-emerald-900">Check your inbox</p>
+                      <p className="mt-1 text-sm leading-6 text-emerald-800">{message}</p>
+                    </div>
+                  </div>
+                  <p className="mt-4 text-xs leading-5 text-emerald-700">If you don’t see it, check spam or confirm that the address belongs to your NEXA account.</p>
+                </motion.div>
+              ) : (
+                <form onSubmit={handleSubmit} noValidate className="space-y-5">
+                  {error && <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium leading-5 text-red-700">{error}</div>}
+                  <div>
+                    <label htmlFor="reset-email" className="mb-2 block text-sm font-bold text-slate-800">Account email</label>
+                    <div className="relative">
+                      <Mail size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        id="reset-email"
+                        type="email"
+                        inputMode="email"
+                        autoCapitalize="none"
+                        autoCorrect="off"
+                        autoComplete="email"
+                        value={email}
+                        onChange={(e) => { setEmail(e.target.value); setError("") }}
+                        disabled={loading}
+                        placeholder="you@example.com"
+                        className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-10 pr-4 text-base outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-50"
+                      />
+                    </div>
+                  </div>
+                  <button type="submit" disabled={loading} className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 text-sm font-bold text-white transition hover:bg-slate-800 disabled:opacity-60">
+                    {loading ? <><Loader2 size={17} className="animate-spin" /> Sending link…</> : "Send reset link"}
+                  </button>
+                </form>
+              )}
 
-            <div className="mb-8">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-500/10">
-                <LockKeyhole className="h-6 w-6 text-indigo-400" />
-              </div>
-
-              <h1 className="text-3xl font-semibold tracking-tight">
-                Reset your password
-              </h1>
-
-              <p className="mt-2 text-sm leading-6 text-slate-400">
-                Create a new password for your NEXA account.
+              <p className="mt-7 text-center text-sm text-slate-500">
+                Remembered it? <Link href="/login" className="font-bold text-slate-950 hover:text-blue-600">Sign in</Link>
               </p>
-            </div>
-
-            {error && (
-              <div className="mb-6 flex items-start gap-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                <span>{error}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Password */}
-              <div>
-                <label
-                  htmlFor="password"
-                  className="mb-2 block text-sm font-medium text-slate-200"
-                >
-                  New password
-                </label>
-
-                <div className="relative">
-                  <input
-                    id="password"
-                    name="password"
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                    placeholder="Enter your new password"
-                    autoComplete="new-password"
-                    disabled={loading}
-                    className="w-full rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3 pr-12 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-indigo-400/50 focus:bg-white/[0.07] focus:ring-2 focus:ring-indigo-500/10 disabled:cursor-not-allowed disabled:opacity-60"
-                  />
-
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((value) => !value)}
-                    aria-label={
-                      showPassword ? "Hide password" : "Show password"
-                    }
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 transition hover:text-slate-300"
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-5 w-5" />
-                    ) : (
-                      <Eye className="h-5 w-5" />
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {/* Confirm password */}
-              <div>
-                <label
-                  htmlFor="confirmPassword"
-                  className="mb-2 block text-sm font-medium text-slate-200"
-                >
-                  Confirm new password
-                </label>
-
-                <div className="relative">
-                  <input
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    type={showConfirmPassword ? "text" : "password"}
-                    value={confirmPassword}
-                    onChange={(event) =>
-                      setConfirmPassword(event.target.value)
-                    }
-                    placeholder="Confirm your new password"
-                    autoComplete="new-password"
-                    disabled={loading}
-                    className="w-full rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3 pr-12 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-indigo-400/50 focus:bg-white/[0.07] focus:ring-2 focus:ring-indigo-500/10 disabled:cursor-not-allowed disabled:opacity-60"
-                  />
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setShowConfirmPassword((value) => !value)
-                    }
-                    aria-label={
-                      showConfirmPassword
-                        ? "Hide password"
-                        : "Show password"
-                    }
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 transition hover:text-slate-300"
-                  >
-                    {showConfirmPassword ? (
-                      <EyeOff className="h-5 w-5" />
-                    ) : (
-                      <Eye className="h-5 w-5" />
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {/* Password requirements */}
-              <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
-                <p className="mb-3 text-xs font-medium text-slate-300">
-                  Password requirements
-                </p>
-
-                <div className="space-y-2 text-xs">
-                  <Requirement
-                    valid={hasMinLength}
-                    text="At least 8 characters"
-                  />
-
-                  <Requirement
-                    valid={hasLetter}
-                    text="At least one letter"
-                  />
-
-                  <Requirement
-                    valid={hasNumber}
-                    text="At least one number"
-                  />
-
-                  <Requirement
-                    valid={passwordsMatch}
-                    text="Passwords match"
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full rounded-xl bg-white px-4 py-3.5 text-sm font-semibold text-slate-950 shadow-lg transition hover:bg-slate-200 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {loading ? "Resetting password..." : "Reset password"}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => router.push("/login")}
-                className="w-full text-center text-sm text-slate-500 transition hover:text-slate-300"
-              >
-                Back to login
-              </button>
-            </form>
-          </div>
-        </section>
+            </motion.div>
+          </section>
+        </div>
       </div>
     </main>
-  );
-}
-
-function Requirement({
-  valid,
-  text,
-}: {
-  valid: boolean;
-  text: string;
-}) {
-  return (
-    <div className="flex items-center gap-2">
-      <span
-        className={`flex h-4 w-4 items-center justify-center rounded-full border ${
-          valid
-            ? "border-emerald-400 bg-emerald-400/10"
-            : "border-slate-700"
-        }`}
-      >
-        {valid && (
-          <CheckCircle2 className="h-3 w-3 text-emerald-400" />
-        )}
-      </span>
-
-      <span className={valid ? "text-emerald-300" : "text-slate-500"}>
-        {text}
-      </span>
-    </div>
-  );
-}
-
-export default function ResetPasswordPage() {
-  return (
-    <Suspense
-      fallback={
-        <main className="min-h-screen bg-slate-950 flex items-center justify-center">
-          <div className="text-sm text-slate-400">
-            Loading password reset...
-          </div>
-        </main>
-      }
-    >
-      <ResetPasswordForm />
-    </Suspense>
-  );
+  )
 }
