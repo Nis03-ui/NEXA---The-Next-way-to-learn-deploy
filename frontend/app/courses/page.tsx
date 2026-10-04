@@ -13,6 +13,7 @@ import {
 
 import AppShell from "@/components/layout/AppShell"
 import { courses, type Course } from "@/lib/lms"
+import CourseThumbnail from "@/components/courses/CourseThumbnail"
 
 export default function CoursesPage() {
   const [allCourses, setAllCourses] = useState<Course[]>([])
@@ -187,22 +188,12 @@ export default function CoursesPage() {
                   key={course.id}
                   className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-xl hover:shadow-slate-900/5"
                 >
-                  {/* Course visual */}
-                  <div className="relative h-36 overflow-hidden bg-slate-100">
-                    <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-600" />
-
-                    <div className="absolute -right-8 -top-12 h-40 w-40 rounded-full bg-blue-500/20 blur-2xl" />
-
-                    <div className="relative flex h-full items-end justify-between p-5">
-                      <div className="grid h-11 w-11 place-items-center rounded-xl bg-white/10 text-white backdrop-blur">
-                        <BookOpen size={19} />
-                      </div>
-
-                      <span className="rounded-full bg-white/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-white backdrop-blur">
-                        {course.subject}
-                      </span>
-                    </div>
-                  </div>
+                  <CourseThumbnail
+                    title={course.title}
+                    subject={course.subject}
+                    thumbnailUrl={course.thumbnail_url}
+                    className="h-36"
+                  />
 
                   <div className="flex flex-1 flex-col p-5">
                     <h3 className="line-clamp-2 text-lg font-black tracking-tight text-slate-950">
