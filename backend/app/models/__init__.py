@@ -26,3 +26,5 @@ from app.models.user_profile import UserProfile
 from app.models.schedule_completion import ScheduleCompletion
 
 from app.models.message import Message
+
+from app.models.admin_schedule_event import AdminScheduleEvent
