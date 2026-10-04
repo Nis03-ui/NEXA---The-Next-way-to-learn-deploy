@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     smtp_from_email: str | None = None
     smtp_from_name: str = "NEXA"
 
+    resend_api_key: str | None = None
+    resend_from_email: str | None = None
+
     gemini_api_key: str | None = None
     gemini_model: str = "gemini-3.8-flash"
     gemini_fallback_model: str = "gemini-3.8-flash-lite"
