@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -316,10 +317,7 @@ async def resend_verification(
         print(f"[EMAIL VERIFICATION ERROR] {type(exc).__name__}: {exc}")
 
     return VerificationResponse(
-        message=(
-            "If the account exists and is not verified, "
-            "a verification email has been sent."
-        ),
+        message="Email verification is temporarily disabled.",
     )
 
 
@@ -337,20 +335,6 @@ async def register(
     request: Request,
     db: AsyncSession = Depends(get_db),
 ):
-    existing_user = (
-        await db.execute(
-            select(User).where(
-                User.email == data.email
-            )
-        )
-    ).scalar_one_or_none()
-
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Email already exists",
-        )
-
     user = User(
         name=data.name,
         email=data.email,
@@ -362,13 +346,16 @@ async def register(
     )
 
     db.add(user)
-    await db.flush()
 
-    # Beta currently activates accounts directly so registration does not
-    # depend on an email provider while the production Resend domain is
-    # being configured. Verification endpoints remain available.
-    await db.commit()
-    await db.refresh(user)
+    try:
+        await db.commit()
+        await db.refresh(user)
+    except IntegrityError as exc:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Unable to create account with this email.",
+        ) from exc
 
     return RegisterResponse(
         message="Account created successfully. You can sign in now.",
