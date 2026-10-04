@@ -49,9 +49,15 @@ app = FastAPI(
 # Middleware
 # ============================================================
 
+ALLOWED_ORIGINS = {
+    settings.frontend_origin.rstrip("/"),
+    "https://nexa-the-next-way-to-learn-deploy-3.onrender.com",
+    "http://localhost:3000",
+}
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.frontend_origin],
+    allow_origins=sorted(ALLOWED_ORIGINS),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
