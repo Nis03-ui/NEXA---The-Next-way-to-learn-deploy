@@ -20,3 +20,5 @@ from app.models.course_material import CourseMaterial
 from app.models.assignment import Assignment, AssignmentSubmission
 from app.models.schedule import ScheduleEvent
 from app.models.notification import Notification
+
+from app.models.user_profile import UserProfile
