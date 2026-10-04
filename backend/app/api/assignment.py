@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status, Query
+from fastapi.responses import FileResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from pathlib import Path
@@ -239,6 +240,41 @@ async def delete_assignment(
 
     await db.delete(assignment)
     await db.commit()
+
+
+# ---------------------------------------------------------
+# VIEW ASSIGNMENT FILE
+# ---------------------------------------------------------
+
+@router.get("/assignments/{assignment_id}/file")
+async def get_assignment_file(
+    assignment_id: int,
+    download: bool = Query(False),
+    user: User = Depends(require_roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+):
+    assignment = await db.get(Assignment, assignment_id)
+    if not assignment or not assignment.file_url:
+        raise HTTPException(status_code=404, detail="Assignment file not found")
+
+    if user.role == Role.STUDENT:
+        await check_student_enrollment(assignment.course_id, user.id, db)
+        if not assignment.published:
+            raise HTTPException(status_code=404, detail="Assignment file not found")
+    elif user.role == Role.TEACHER:
+        await check_course_teacher(assignment.course_id, user, db)
+
+    file_path = Path(assignment.file_url.lstrip("/"))
+    if not file_path.is_file():
+        raise HTTPException(status_code=404, detail="Assignment file is no longer available")
+
+    filename = f"{assignment.title or 'assignment'}{file_path.suffix}"
+    return FileResponse(
+        path=file_path,
+        filename=filename,
+        media_type="application/pdf" if file_path.suffix.lower() == ".pdf" else None,
+        content_disposition_type="attachment" if download else "inline",
+    )
 
 
 # ---------------------------------------------------------
