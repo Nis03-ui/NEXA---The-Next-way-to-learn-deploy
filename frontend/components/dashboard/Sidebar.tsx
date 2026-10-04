@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { motion } from "framer-motion"
 import { usePathname } from "next/navigation"
 import {
   LayoutDashboard,
@@ -120,8 +121,8 @@ export default function Sidebar({ mobile = false, onNavigate }: SidebarProps) {
               const active = isActive(item)
 
               return (
+                <motion.div key={item.name} whileHover={{ x: 3 }} whileTap={{ scale: 0.98 }}>
                 <Link
-                  key={item.name}
                   href={item.href}
                   onClick={onNavigate}
                   className={[
@@ -136,6 +137,7 @@ export default function Sidebar({ mobile = false, onNavigate }: SidebarProps) {
                   <span className="min-w-0 flex-1 truncate">{item.name}</span>
                   {active && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-white" />}
                 </Link>
+                </motion.div>
               )
             })}
 
