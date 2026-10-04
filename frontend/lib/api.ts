@@ -314,8 +314,6 @@ export async function api<T>(
 
     if (refreshToken) {
       try {
-        const refreshResponse = await makeRequest(null)
-        // makeRequest uses the current path, so refresh through the dedicated endpoint.
         const refreshHeaders = new Headers({ "Content-Type": "application/json" })
         const refreshed = await fetch(`${API}/auth/refresh`, {
           method: "POST",
