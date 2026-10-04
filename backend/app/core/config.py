@@ -36,8 +36,10 @@ class Settings(BaseSettings):
     google_drive_folder_id: str | None = None
 
     gemini_api_key: str | None = None
-    gemini_model: str = "gemini-3.8-flash"
-    gemini_fallback_model: str = "gemini-3.8-flash-lite"
+    gemini_api_key_backup: str | None = None
+    gemini_api_key_backup_2: str | None = None
+    gemini_model: str = "gemini-2.5-flash"
+    gemini_fallback_model: str = "gemini-2.5-flash-lite"
 
     model_config = SettingsConfigDict(
         env_file=".env",
