@@ -12,6 +12,7 @@ from app.schemas.course import (
     CourseUpdate,
     CourseWithEnrollment,
     EnrollmentResponse,
+    AdminCourseResponse,
 )
 
 router = APIRouter(prefix="/courses", tags=["Courses"])
@@ -79,6 +80,41 @@ async def get_my_enrolled_courses(
         )
         for course, enrollment in result.all()
     ]
+
+
+@router.get("/admin/overview", response_model=list[AdminCourseResponse])
+async def get_admin_course_overview(
+    user: User = Depends(require_roles(Role.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(Course, User)
+        .join(User, User.id == Course.teacher_id)
+        .order_by(Course.created_at.desc())
+    )
+
+    rows = []
+    for course, teacher in result.all():
+        enrollment_result = await db.execute(
+            select(Enrollment).where(
+                Enrollment.course_id == course.id,
+                Enrollment.status == "ACTIVE",
+            )
+        )
+        rows.append(AdminCourseResponse(
+            id=course.id,
+            title=course.title,
+            description=course.description,
+            subject=course.subject,
+            teacher_id=course.teacher_id,
+            teacher_name=teacher.name,
+            teacher_email=teacher.email,
+            published=course.published,
+            enrolled_students=len(enrollment_result.scalars().all()),
+            created_at=course.created_at,
+            updated_at=course.updated_at,
+        ))
+    return rows
 
 
 @router.get("/{course_id}", response_model=CourseResponse)
