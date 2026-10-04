@@ -473,5 +473,5 @@ export const messages = {
 
 export function messageFileUrl(fileUrl: string) {
   const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"
-  return fileUrl.startsWith("http") ? fileUrl : base.replace(/\\/api\\/v1$/, "") + fileUrl
+  return fileUrl.startsWith("http") ? fileUrl : base.replace("/api/v1", "") + fileUrl
 }
