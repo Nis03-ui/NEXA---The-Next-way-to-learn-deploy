@@ -16,7 +16,7 @@ class UserProfile(Base):
         nullable=False,
         index=True,
     )
-    avatar_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    avatar_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     bio: Mapped[str | None] = mapped_column(Text, nullable=True)
     linkedin_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     github_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
