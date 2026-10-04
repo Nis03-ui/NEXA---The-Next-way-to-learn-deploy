@@ -1,6 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from pathlib import Path
+from uuid import uuid4
 
 from app.core.security import current_user, require_roles
 from app.db.session import get_db
@@ -313,6 +315,77 @@ async def submit_assignment(
     await db.commit()
     await db.refresh(submission)
 
+    return submission
+
+
+# ---------------------------------------------------------
+# STUDENT: UPLOAD FILE SUBMISSION
+# ---------------------------------------------------------
+
+@router.post(
+    "/assignments/{assignment_id}/submit-file",
+    response_model=AssignmentSubmissionResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def submit_assignment_file(
+    assignment_id: int,
+    file: UploadFile = File(...),
+    external_url: str | None = Form(None),
+    user: User = Depends(require_roles(Role.STUDENT)),
+    db: AsyncSession = Depends(get_db),
+):
+    assignment = await db.get(Assignment, assignment_id)
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Assignment not found")
+    if not assignment.published:
+        raise HTTPException(status_code=400, detail="Assignment is not published")
+    await check_student_enrollment(assignment.course_id, user.id, db)
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="A file is required")
+
+    max_size = 10 * 1024 * 1024
+    storage_dir = Path("uploads") / "assignments" / str(assignment_id)
+    storage_dir.mkdir(parents=True, exist_ok=True)
+    suffix = Path(file.filename).suffix.lower()
+    safe_name = f"{uuid4().hex}{suffix}"
+    target = storage_dir / safe_name
+    size = 0
+    try:
+        with target.open("wb") as output:
+            while chunk := await file.read(1024 * 1024):
+                size += len(chunk)
+                if size > max_size:
+                    target.unlink(missing_ok=True)
+                    raise HTTPException(status_code=413, detail="File must be 10 MB or smaller")
+                output.write(chunk)
+    finally:
+        await file.close()
+
+    existing_result = await db.execute(
+        select(AssignmentSubmission).where(
+            AssignmentSubmission.assignment_id == assignment_id,
+            AssignmentSubmission.student_id == user.id,
+        )
+    )
+    submission = existing_result.scalar_one_or_none()
+    file_url = f"/uploads/assignments/{assignment_id}/{safe_name}"
+
+    if submission:
+        submission.file_url = file_url
+        submission.external_url = external_url
+        submission.status = "SUBMITTED"
+    else:
+        submission = AssignmentSubmission(
+            assignment_id=assignment_id,
+            student_id=user.id,
+            file_url=file_url,
+            external_url=external_url,
+            status="SUBMITTED",
+        )
+        db.add(submission)
+
+    await db.commit()
+    await db.refresh(submission)
     return submission
 
 
