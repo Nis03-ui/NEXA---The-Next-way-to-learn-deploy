@@ -1,6 +1,11 @@
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi.responses import Response
+from fastapi import Query
+import asyncio
+from pathlib import Path
+from uuid import uuid4
 
 from app.core.security import require_roles
 from app.db.session import get_db
@@ -9,6 +14,7 @@ from app.models.user import Role, User
 from app.schemas.content import ContentCreate, ContentOut, ContentUpdate
 from app.services.indexing import ContentIndexingService
 from app.services.pdf import PDFExtractionService
+from app.services.google_drive import upload_file, download_file
 
 
 router = APIRouter(prefix="/teacher", tags=["Teacher"])
@@ -76,8 +82,13 @@ async def upload_content(
         )
 
     try:
-        extraction_service = PDFExtractionService()
+        max_size = 10 * 1024 * 1024
+        pdf_bytes = await file.read(max_size + 1)
+        if len(pdf_bytes) > max_size:
+            raise HTTPException(status_code=413, detail="File must be 10 MB or smaller")
+        await file.seek(0)
 
+        extraction_service = PDFExtractionService()
         extracted_text, pages = await extraction_service.extract(file)
 
         content = Content(
@@ -99,6 +110,11 @@ async def upload_content(
             content=content,
             db=db,
         )
+
+        drive_name = f"content-{content.id}-{uuid4().hex}-{Path(file.filename).name}"
+        drive_file_id = await asyncio.to_thread(upload_file, pdf_bytes, drive_name, file.content_type or "application/pdf")
+        content.drive_file_id = drive_file_id
+        content.file_url = f"/api/v1/teacher/content/{content.id}/file"
 
         await db.commit()
         await db.refresh(content)
@@ -223,3 +239,26 @@ async def delete_content(
     await db.commit()
 
     return {"message": "Content deleted successfully"}
+
+@router.get("/content/{content_id}/file")
+async def get_content_file(
+    content_id: int,
+    download: bool = Query(False),
+    user: User = Depends(require_roles(Role.TEACHER, Role.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+):
+    content = await db.get(Content, content_id)
+    if not content or not content.drive_file_id:
+        raise HTTPException(status_code=404, detail="Content file not found")
+    if user.role != Role.ADMIN and content.author_id != user.id:
+        raise HTTPException(status_code=403, detail="You can only access your own content file")
+    try:
+        data, mime_type = await asyncio.to_thread(download_file, content.drive_file_id)
+    except Exception as exc:
+        raise HTTPException(status_code=404, detail="Content file is no longer available") from exc
+    filename = content.title or "content"
+    if not Path(filename).suffix:
+        filename += ".pdf"
+    return Response(content=data, media_type=mime_type, headers={
+        "Content-Disposition": f'{"attachment" if download else "inline"}; filename="{filename}"'
+    })
