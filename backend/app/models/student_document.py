@@ -47,6 +47,12 @@ class StudentDocument(Base):
         nullable=False,
     )
 
+    drive_file_id: Mapped[str | None] = mapped_column(
+        String(200),
+        nullable=True,
+        index=True,
+    )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
         server_default=func.now(),
