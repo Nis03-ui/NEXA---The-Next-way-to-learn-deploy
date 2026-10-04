@@ -358,60 +358,20 @@ async def register(
             data.password
         ),
         role=data.role,
-        email_verified=False,
+        email_verified=True,
     )
 
     db.add(user)
     await db.flush()
 
-    verification_token = await create_email_verification_token(
-        user=user,
-        db=db,
-    )
-
-    verification_url = (
-        f"{settings.frontend_origin}/verify-email"
-        f"?token={verification_token}"
-    )
-
-    try:
-        send_email(
-            to_email=user.email,
-            subject="Verify your NEXA email address",
-            html_content=f"""
-            <html>
-              <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #0f172a;">
-                <div style="max-width: 560px; margin: 0 auto; padding: 32px;">
-                  <h1 style="margin-bottom: 8px;">NEXA</h1>
-                  <p>Hello {user.name},</p>
-                  <p>Thanks for creating your NEXA account. Please verify your email address before signing in.</p>
-                  <p>
-                    <a href="{verification_url}"
-                       style="display:inline-block;padding:12px 20px;background:#0f172a;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">
-                      Verify my email
-                    </a>
-                  </p>
-                  <p>This link expires after {settings.email_verification_expire_minutes} minutes.</p>
-                  <p>If you did not create this account, you can safely ignore this email.</p>
-                  <p>— NEXA<br />The Next Way to Learn</p>
-                </div>
-              </body>
-            </html>
-            """,
-        )
-        await db.commit()
-    except Exception as exc:
-        await db.rollback()
-        print(f"[EMAIL VERIFICATION ERROR] {type(exc).__name__}: {exc}")
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="We could not send the verification email. Please try again.",
-        ) from exc
-
+    # Beta currently activates accounts directly so registration does not
+    # depend on an email provider while the production Resend domain is
+    # being configured. Verification endpoints remain available.
+    await db.commit()
     await db.refresh(user)
 
     return RegisterResponse(
-        message="Account created. Please check your email to verify your account.",
+        message="Account created successfully. You can sign in now.",
     )
 
 
@@ -443,12 +403,6 @@ async def login(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials",
-        )
-
-    if not user.email_verified:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Please verify your email address before signing in.",
         )
 
     refresh_token, _ = await create_auth_session(
