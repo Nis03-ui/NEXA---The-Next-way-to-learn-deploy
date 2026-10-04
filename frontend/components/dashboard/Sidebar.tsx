@@ -28,73 +28,25 @@ type NavItem = {
 }
 
 const studentLinks: NavItem[] = [
-  {
-    name: "Dashboard",
-    href: "/dashboard",
-    icon: LayoutDashboard,
-  },
-  {
-    name: "My Courses",
-    href: "/dashboard",
-    icon: GraduationCap,
-  },
-  {
-    name: "Browse Courses",
-    href: "/courses",
-    icon: Library,
-  },
-  {
-    name: "AI Tutor",
-    href: "/tutor",
-    icon: MessageSquare,
-  },
-  {
-    name: "Quizzes",
-    href: "/quizzes",
-    icon: BookOpen,
-  },
+  { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Courses", href: "/courses", icon: Library },
+  { name: "AI Tutor", href: "/tutor", icon: MessageSquare },
+  { name: "Quizzes", href: "/quizzes", icon: BookOpen },
 ]
 
 const teacherLinks: NavItem[] = [
-  {
-    name: "Dashboard",
-    href: "/teacher/dashboard",
-    icon: LayoutDashboard,
-  },
-  {
-    name: "My Courses",
-    href: "/teacher",
-    icon: GraduationCap,
-  },
+  { name: "Overview", href: "/teacher/dashboard", icon: LayoutDashboard },
+  { name: "My Courses", href: "/teacher", icon: GraduationCap },
 ]
 
 const adminLinks: NavItem[] = [
-  {
-    name: "Admin Dashboard",
-    href: "/admin",
-    icon: LayoutDashboard,
-  },
-  {
-    name: "Courses",
-    href: "/teacher",
-    icon: GraduationCap,
-  },
-  {
-    name: "Users",
-    href: "/admin#users",
-    icon: Users,
-  },
-  {
-    name: "Announcements",
-    href: "/admin#announcements",
-    icon: Megaphone,
-  },
+  { name: "Overview", href: "/admin", icon: LayoutDashboard },
+  { name: "Courses", href: "/teacher", icon: GraduationCap },
+  { name: "Users", href: "/admin#users", icon: Users },
+  { name: "Announcements", href: "/admin#announcements", icon: Megaphone },
 ]
 
-export default function Sidebar({
-  mobile = false,
-  onNavigate,
-}: SidebarProps) {
+export default function Sidebar({ mobile = false, onNavigate }: SidebarProps) {
   const pathname = usePathname()
   const { user } = useAuth()
 
@@ -105,7 +57,26 @@ export default function Sidebar({
         ? teacherLinks
         : studentLinks
 
-  const profileHref = "/profile"
+  const homeHref =
+    user?.role === "ADMIN"
+      ? "/admin"
+      : user?.role === "TEACHER"
+        ? "/teacher/dashboard"
+        : "/dashboard"
+
+  function isActive(item: NavItem) {
+    const basePath = item.href.split("#")[0]
+
+    if (item.href === "/teacher/dashboard") {
+      return pathname === "/teacher/dashboard"
+    }
+
+    if (item.href === "/teacher") {
+      return pathname === "/teacher" || pathname.startsWith("/teacher/courses/")
+    }
+
+    return pathname === basePath || pathname.startsWith(`${basePath}/`)
+  }
 
   return (
     <aside
@@ -116,22 +87,17 @@ export default function Sidebar({
       }
     >
       <div className="flex h-full min-h-0 flex-col">
-        {/* Brand */}
         <div className="flex h-20 shrink-0 items-center px-5 sm:px-6">
           <Link
-            href={user?.role === "ADMIN" ? "/admin" : user?.role === "TEACHER" ? "/teacher" : "/dashboard"}
+            href={homeHref}
             onClick={onNavigate}
             className="flex min-w-0 items-center gap-2.5 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
           >
             <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-slate-950 text-white">
               <Sparkles size={17} />
             </div>
-
             <div className="min-w-0">
-              <p className="text-lg font-black tracking-tight text-slate-950">
-                NEXA
-              </p>
-
+              <p className="text-lg font-black tracking-tight text-slate-950">NEXA</p>
               <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                 Learn smarter
               </p>
@@ -139,7 +105,6 @@ export default function Sidebar({
           </Link>
         </div>
 
-        {/* Navigation */}
         <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4 sm:py-5">
           <p className="px-3 pb-3 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
             Workspace
@@ -148,17 +113,7 @@ export default function Sidebar({
           <nav className="space-y-1" aria-label="Main navigation">
             {links.map((item) => {
               const Icon = item.icon
-
-              const basePath = item.href.split("#")[0]
-
-              const active =
-                item.href === "/teacher/dashboard"
-                  ? pathname === "/teacher/dashboard"
-                  : item.href === "/teacher"
-                    ? pathname === "/teacher" ||
-                      pathname.startsWith("/teacher/courses/")
-                    : pathname === basePath ||
-                      pathname.startsWith(`${basePath}/`)
+              const active = isActive(item)
 
               return (
                 <Link
@@ -173,26 +128,15 @@ export default function Sidebar({
                       : "text-slate-500 hover:bg-slate-50 hover:text-slate-900",
                   ].join(" ")}
                 >
-                  <Icon
-                    size={17}
-                    className="shrink-0"
-                    strokeWidth={active ? 2.2 : 1.9}
-                  />
-
-                  <span className="min-w-0 flex-1 truncate">
-                    {item.name}
-                  </span>
-
-                  {active && (
-                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-white" />
-                  )}
+                  <Icon size={17} className="shrink-0" strokeWidth={active ? 2.2 : 1.9} />
+                  <span className="min-w-0 flex-1 truncate">{item.name}</span>
+                  {active && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-white" />}
                 </Link>
               )
             })}
 
-            {/* Profile */}
             <Link
-              href={profileHref}
+              href="/profile"
               onClick={onNavigate}
               className={[
                 "flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition",
@@ -202,42 +146,22 @@ export default function Sidebar({
                   : "text-slate-500 hover:bg-slate-50 hover:text-slate-900",
               ].join(" ")}
             >
-              <UserCircle
-                size={17}
-                className="shrink-0"
-                strokeWidth={pathname === "/profile" ? 2.2 : 1.9}
-              />
-
-              <span className="min-w-0 flex-1 truncate">
-                Profile
-              </span>
-
-              {pathname === "/profile" && (
-                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-white" />
-              )}
+              <UserCircle size={17} className="shrink-0" strokeWidth={pathname === "/profile" ? 2.2 : 1.9} />
+              <span className="min-w-0 flex-1 truncate">Profile</span>
+              {pathname === "/profile" && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-white" />}
             </Link>
           </nav>
         </div>
 
-        {/* NEXA CTA */}
         <div className="shrink-0 border-t border-slate-100 p-3 sm:p-4">
           <div className="rounded-2xl bg-slate-50 p-3.5 sm:p-4">
             <div className="flex items-center gap-2">
-              <Sparkles
-                size={15}
-                className="shrink-0 text-blue-600"
-              />
-
-              <p className="text-xs font-bold text-slate-900">
-                NEXA AI
-              </p>
+              <Sparkles size={15} className="shrink-0 text-blue-600" />
+              <p className="text-xs font-bold text-slate-900">NEXA AI</p>
             </div>
-
             <p className="mt-2 text-[11px] leading-5 text-slate-500">
-              Your intelligent study companion for understanding difficult
-              concepts.
+              Your intelligent study companion for understanding difficult concepts.
             </p>
-
             <Link
               href="/tutor"
               onClick={onNavigate}
