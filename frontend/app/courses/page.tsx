@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import Link from "next/link"
-import { motion, AnimatePresence } from "framer-motion"
 import {
   ArrowRight,
   BookOpen,
