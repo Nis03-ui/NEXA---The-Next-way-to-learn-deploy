@@ -33,6 +33,7 @@ import {
   type CourseMaterial,
   type ScheduleEvent,
 } from "@/lib/lms"
+import { api } from "@/lib/api"
 
 type Tab = "overview" | "materials" | "assignments" | "quizzes" | "schedule"
 
@@ -571,14 +572,14 @@ function MaterialsList({
                   <div className="mt-4 flex flex-wrap gap-2">
                     {item.file_url && (
                       <>
-                        <a href={courseMaterialFileUrl(item.course_id, item.id)} target="_blank" rel="noreferrer" className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-slate-950 px-3 text-xs font-bold text-white">
+                        <button type="button" onClick={() => void openProtectedFile(courseMaterialFileUrl(item.course_id, item.id), false, item.title)} className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-slate-950 px-3 text-xs font-bold text-white">
                           View PDF
                           <ExternalLink size={13} />
-                        </a>
-                        <a href={courseMaterialFileUrl(item.course_id, item.id, true)} className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-slate-200 px-3 text-xs font-bold text-slate-700">
+                        </button>
+                        <button type="button" onClick={() => void openProtectedFile(courseMaterialFileUrl(item.course_id, item.id, true), true, item.title)} className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-slate-200 px-3 text-xs font-bold text-slate-700">
                           Download
                           <ArrowDownToLine size={13} />
-                        </a>
+                        </button>
                       </>
                     )}
 
@@ -652,12 +653,12 @@ function AssignmentsList({
 
                     {item.file_url && (
                       <>
-                        <a href={assignmentFileUrl(item.id)} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-slate-600">
+                        <button type="button" onClick={() => void openProtectedFile(assignmentFileUrl(item.id), false, item.title)} className="flex items-center gap-1.5 text-slate-600">
                           <FileText size={12} /> View file
-                        </a>
-                        <a href={assignmentFileUrl(item.id, true)} className="flex items-center gap-1.5 text-slate-600">
+                        </button>
+                        <button type="button" onClick={() => void openProtectedFile(assignmentFileUrl(item.id, true), true, item.title)} className="flex items-center gap-1.5 text-slate-600">
                           <ArrowDownToLine size={12} /> Download
-                        </a>
+                        </button>
                       </>
                     )}
 
@@ -899,21 +900,37 @@ function formatDateTime(value: string) {
 }
 
 async function fetchQuizzes(): Promise<QuizSummary[]> {
-  const response = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"}/quizzes`,
-    {
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    },
-  )
+  return api<QuizSummary[]>("/quizzes")
+}
+
+async function openProtectedFile(url: string, download: boolean, filename: string) {
+  const token = localStorage.getItem("nexa_token")
+  if (!token) throw new Error("You are not authenticated")
+
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
 
   if (!response.ok) {
-    throw new Error("Failed to fetch quizzes")
+    throw new Error(`Unable to open file (${response.status})`)
   }
 
-  return response.json()
+  const blob = await response.blob()
+  const objectUrl = URL.createObjectURL(blob)
+
+  if (download) {
+    const anchor = document.createElement("a")
+    anchor.href = objectUrl
+    anchor.download = filename + (blob.type === "application/pdf" ? ".pdf" : "")
+    document.body.appendChild(anchor)
+    anchor.click()
+    anchor.remove()
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 1000)
+    return
+  }
+
+  window.open(objectUrl, "_blank", "noopener,noreferrer")
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000)
 }
 
 function ArrowRight({
