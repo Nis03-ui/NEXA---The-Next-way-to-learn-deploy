@@ -27,7 +27,7 @@ export default function TeacherDashboard() {
   const [assignmentCount, setAssignmentCount] = useState(0)
   const [eventCount, setEventCount] = useState(0)
   const [quizCount, setQuizCount] = useState(0)
-  const [courseAnalytics, setCourseAnalytics] = useState<{ title: string; students: number; assignments: number }[]>([])
+  const [courseAnalytics, setCourseAnalytics] = useState<{ title: string; students: number; assignments: number }[]>([])\n  const [quizAnalytics, setQuizAnalytics] = useState<{ title: string; average: number }[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -57,6 +57,21 @@ export default function TeacherDashboard() {
         )
 
         const allQuizzes = await quizzes.getAll()
+        const ownedQuizzes = allQuizzes.filter((quiz) => quiz.course_id != null && courseIds.has(quiz.course_id))
+        const quizResults = await Promise.all(
+          ownedQuizzes.slice(0, 12).map(async (quiz) => {
+            try {
+              const attempts = await quizzes.getAttempts(quiz.id)
+              const scored = attempts.filter((attempt) => attempt.total_marks > 0)
+              const average = scored.length
+                ? Math.round((scored.reduce((sum, attempt) => sum + (attempt.score / attempt.total_marks) * 100, 0) / scored.length) * 10) / 10
+                : 0
+              return { title: quiz.title, average }
+            } catch {
+              return { title: quiz.title, average: 0 }
+            }
+          }),
+        )
 
         if (!active) return
 
@@ -64,7 +79,7 @@ export default function TeacherDashboard() {
         setStudentCount(details.reduce((sum, item) => sum + item.students, 0))
         setAssignmentCount(details.reduce((sum, item) => sum + item.assignments, 0))
         setEventCount(details.reduce((sum, item) => sum + item.events, 0))
-        setQuizCount(allQuizzes.filter((quiz) => quiz.course_id != null && courseIds.has(quiz.course_id)).length)
+        setQuizCount(ownedQuizzes.length)\n        setQuizAnalytics(quizResults)
       } catch {
         if (active) {
           setCourseList([])
@@ -72,7 +87,7 @@ export default function TeacherDashboard() {
           setAssignmentCount(0)
           setEventCount(0)
           setQuizCount(0)
-          setCourseAnalytics([])
+          setCourseAnalytics([])\n          setQuizAnalytics([])
         }
       } finally {
         if (active) setLoading(false)
