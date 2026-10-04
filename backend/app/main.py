@@ -29,6 +29,22 @@ async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
+        # The deployed database was created before course_id was added to
+        # quizzes/contents. create_all() does not alter existing tables, so
+        # keep the live schema compatible with the current ORM models.
+        await conn.execute(text(
+            "ALTER TABLE quizzes ADD COLUMN IF NOT EXISTS course_id INTEGER"
+        ))
+        await conn.execute(text(
+            "CREATE INDEX IF NOT EXISTS ix_quizzes_course_id ON quizzes (course_id)"
+        ))
+        await conn.execute(text(
+            "ALTER TABLE contents ADD COLUMN IF NOT EXISTS course_id INTEGER"
+        ))
+        await conn.execute(text(
+            "CREATE INDEX IF NOT EXISTS ix_contents_course_id ON contents (course_id)"
+        ))
+
     yield
 
     # Dispose database connections when the application shuts down.
