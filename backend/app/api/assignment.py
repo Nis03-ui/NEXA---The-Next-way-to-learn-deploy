@@ -514,10 +514,25 @@ async def get_submission_file(
     if not file_path.is_file():
         raise HTTPException(status_code=404, detail="Submitted file is no longer available")
 
+    media_types = {
+        ".pdf": "application/pdf",
+        ".txt": "text/plain",
+        ".png": "image/png",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".webp": "image/webp",
+        ".gif": "image/gif",
+        ".doc": "application/msword",
+        ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        ".ppt": "application/vnd.ms-powerpoint",
+        ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        ".xls": "application/vnd.ms-excel",
+        ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    }
     return FileResponse(
         path=file_path,
         filename=file_path.name,
-        media_type="application/octet-stream",
+        media_type=media_types.get(file_path.suffix.lower(), "application/octet-stream"),
         content_disposition_type="attachment" if download else "inline",
     )
 
