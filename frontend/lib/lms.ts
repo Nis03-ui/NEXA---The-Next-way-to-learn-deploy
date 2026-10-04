@@ -165,11 +165,13 @@ export const materials = {
   upload: (
     courseId: number,
     file: File,
+    title?: string,
     description?: string,
     published = true,
   ) => {
     const form = new FormData()
     form.append("file", file)
+    if (title) form.append("title", title)
     if (description) form.append("description", description)
     form.append("published", String(published))
     return api<CourseMaterial>(`/courses/${courseId}/materials/upload`, {
