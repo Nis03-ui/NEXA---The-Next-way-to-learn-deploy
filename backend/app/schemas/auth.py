@@ -47,6 +47,9 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
     user: UserOut
 
+class RegisterResponse(BaseModel):
+    message: str
+
 
 class RefreshRequest(BaseModel):
     refresh_token: str = Field(
