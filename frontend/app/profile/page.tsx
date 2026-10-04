@@ -489,7 +489,7 @@ function ProfileContent() {
             </div>
           </>
         )}
-      </section>
+      </motion.section>
     </motion.div>
   )
 }
