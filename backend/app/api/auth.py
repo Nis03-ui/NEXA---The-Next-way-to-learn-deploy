@@ -352,26 +352,21 @@ async def register(
     db.add(user)
 
     try:
-        await db.commit()
-        await db.refresh(user)
-    except IntegrityError as exc:
-        await db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Unable to create account with this email.",
-        ) from exc
+        # Keep account creation and token creation in the same transaction.
+        # The account is committed only after Resend accepts the message,
+        # so a failed email delivery cannot leave an unusable unverified account.
+        await db.flush()
 
-    verification_token = await create_email_verification_token(
-        user=user,
-        db=db,
-    )
+        verification_token = await create_email_verification_token(
+            user=user,
+            db=db,
+        )
 
-    verification_url = (
-        f"{settings.frontend_origin}/verify-email"
-        f"?token={verification_token}"
-    )
+        verification_url = (
+            f"{settings.frontend_origin}/verify-email"
+            f"?token={verification_token}"
+        )
 
-    try:
         await send_email(
             to_email=user.email,
             subject="Verify your NEXA email address",
@@ -388,16 +383,29 @@ async def register(
         </a>
       </p>
       <p>This link expires after {settings.email_verification_expire_minutes} minutes.</p>
+      <p>If you did not create this account, you can safely ignore this email.</p>
       <p>— NEXA<br />The Next Way to Learn</p>
     </div>
   </body>
 </html>
 """,
         )
+
         await db.commit()
+
+    except IntegrityError as exc:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Unable to create account with this email.",
+        ) from exc
+
     except Exception as exc:
         await db.rollback()
+
+        # Log provider details server-side only.
         print(f"[EMAIL VERIFICATION ERROR] {type(exc).__name__}: {exc}")
+
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Unable to send verification email. Please try again.",
