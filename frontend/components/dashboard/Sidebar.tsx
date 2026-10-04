@@ -12,6 +12,7 @@ import {
   UserCircle,
   Sparkles,
   Library,
+  CalendarDays,
 } from "lucide-react"
 
 import { useAuth } from "@/providers/AuthProvider"
@@ -32,11 +33,13 @@ const studentLinks: NavItem[] = [
   { name: "Courses", href: "/courses", icon: Library },
   { name: "AI Tutor", href: "/tutor", icon: MessageSquare },
   { name: "Quizzes", href: "/quizzes", icon: BookOpen },
+  { name: "Schedule", href: "/schedule", icon: CalendarDays },
 ]
 
 const teacherLinks: NavItem[] = [
   { name: "Overview", href: "/teacher/dashboard", icon: LayoutDashboard },
   { name: "My Courses", href: "/teacher", icon: GraduationCap },
+  { name: "Schedule", href: "/schedule", icon: CalendarDays },
 ]
 
 const adminLinks: NavItem[] = [
@@ -44,6 +47,7 @@ const adminLinks: NavItem[] = [
   { name: "Courses", href: "/teacher", icon: GraduationCap },
   { name: "Users", href: "/admin#users", icon: Users },
   { name: "Announcements", href: "/admin#announcements", icon: Megaphone },
+  { name: "Schedule", href: "/schedule", icon: CalendarDays },
 ]
 
 export default function Sidebar({ mobile = false, onNavigate }: SidebarProps) {
