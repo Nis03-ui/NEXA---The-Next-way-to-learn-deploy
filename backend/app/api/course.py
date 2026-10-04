@@ -120,6 +120,41 @@ async def get_admin_course_overview(
     return rows
 
 
+@router.get("/{course_id}/teacher")
+async def get_course_teacher(
+    course_id: int,
+    user: User = Depends(require_roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+):
+    course = await db.get(Course, course_id)
+    if course is None:
+        raise HTTPException(status_code=404, detail="Course not found")
+
+    if user.role == Role.STUDENT:
+        enrolled = await db.execute(
+            select(Enrollment).where(
+                Enrollment.course_id == course_id,
+                Enrollment.student_id == user.id,
+                Enrollment.status == "ACTIVE",
+            )
+        )
+        if enrolled.scalar_one_or_none() is None:
+            raise HTTPException(status_code=403, detail="You are not enrolled in this course")
+
+    teacher = await db.get(User, course.teacher_id)
+    if teacher is None:
+        raise HTTPException(status_code=404, detail="Teacher not found")
+
+    return {
+        "id": teacher.id,
+        "name": teacher.name,
+        "email": teacher.email,
+        "role": teacher.role,
+        "avatar_url": getattr(teacher, "avatar_url", None),
+        "bio": getattr(teacher, "bio", None),
+    }
+
+
 @router.get("/{course_id}", response_model=CourseResponse)
 async def get_course(
     course_id: int,
