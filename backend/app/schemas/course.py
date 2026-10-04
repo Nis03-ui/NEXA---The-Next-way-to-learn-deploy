@@ -7,6 +7,7 @@ class CourseCreate(BaseModel):
     title: str = Field(min_length=2, max_length=200)
     description: str | None = Field(default=None, max_length=5000)
     subject: str = Field(min_length=1, max_length=100)
+    thumbnail_url: str | None = Field(default=None, max_length=1000)
 
 
 class CourseUpdate(BaseModel):
