@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status, Query
-from fastapi.responses import FileResponse
+from fastapi.responses import Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from pathlib import Path
 from uuid import uuid4
+import asyncio
 
 from app.core.security import current_user, require_roles
 from app.core.config import settings
@@ -20,6 +21,7 @@ from app.schemas.assignment import (
     AssignmentUpdate,
 )
 from app.services.notification import notify_course_students
+from app.services.google_drive import upload_file, download_file, delete_file
 
 router = APIRouter(tags=["Assignments"])
 
@@ -165,23 +167,22 @@ async def upload_assignment(
             raise HTTPException(status_code=422, detail="Invalid due date")
 
     max_size = 10 * 1024 * 1024
-    storage_dir = Path(settings.upload_dir) / "assignments" / str(course_id)
-    storage_dir.mkdir(parents=True, exist_ok=True)
-    suffix = Path(file.filename).suffix.lower()
-    safe_name = f"{uuid4().hex}{suffix}"
-    target = storage_dir / safe_name
+    content = await file.read(max_size + 1)
+    await file.close()
+    if len(content) > max_size:
+        raise HTTPException(status_code=413, detail="File must be 10 MB or smaller")
 
-    size = 0
+    original_name = Path(file.filename).name
+    drive_name = f"assignment-{course_id}-{uuid4().hex}-{original_name}"
     try:
-        with target.open("wb") as output:
-            while chunk := await file.read(1024 * 1024):
-                size += len(chunk)
-                if size > max_size:
-                    target.unlink(missing_ok=True)
-                    raise HTTPException(status_code=413, detail="File must be 10 MB or smaller")
-                output.write(chunk)
-    finally:
-        await file.close()
+        drive_file_id = await asyncio.to_thread(
+            upload_file, content, drive_name, file.content_type
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Unable to store assignment file. Please try again.",
+        ) from exc
 
     assignment = Assignment(
         course_id=course_id,
@@ -190,7 +191,8 @@ async def upload_assignment(
         instructions=instructions,
         due_date=parsed_due_date,
         max_marks=max_marks,
-        file_url=f"/uploads/assignments/{course_id}/{safe_name}",
+        file_url=None,
+        drive_file_id=drive_file_id,
         published=published,
     )
     db.add(assignment)
@@ -360,16 +362,23 @@ async def get_assignment_file(
     elif user.role == Role.TEACHER:
         await check_course_teacher(assignment.course_id, user, db)
 
-    file_path = Path(settings.upload_dir) / assignment.file_url.lstrip("/")
-    if not file_path.is_file():
+    if not assignment.drive_file_id:
         raise HTTPException(status_code=404, detail="Assignment file is no longer available")
 
-    filename = f"{assignment.title or 'assignment'}{file_path.suffix}"
-    return FileResponse(
-        path=file_path,
-        filename=filename,
-        media_type="application/pdf" if file_path.suffix.lower() == ".pdf" else None,
-        content_disposition_type="attachment" if download else "inline",
+    try:
+        content, mime_type = await asyncio.to_thread(download_file, assignment.drive_file_id)
+    except Exception as exc:
+        raise HTTPException(status_code=404, detail="Assignment file is no longer available") from exc
+
+    filename = assignment.title or "assignment"
+    return Response(
+        content=content,
+        media_type=mime_type,
+        headers={
+            "Content-Disposition": (
+                f'{"attachment" if download else "inline"}; filename="{filename}"'
+            )
+        },
     )
 
 
@@ -476,22 +485,22 @@ async def submit_assignment_file(
         raise HTTPException(status_code=400, detail="A file is required")
 
     max_size = 10 * 1024 * 1024
-    storage_dir = Path(settings.upload_dir) / "assignments" / str(assignment_id)
-    storage_dir.mkdir(parents=True, exist_ok=True)
-    suffix = Path(file.filename).suffix.lower()
-    safe_name = f"{uuid4().hex}{suffix}"
-    target = storage_dir / safe_name
-    size = 0
+    content = await file.read(max_size + 1)
+    await file.close()
+    if len(content) > max_size:
+        raise HTTPException(status_code=413, detail="File must be 10 MB or smaller")
+
+    original_name = Path(file.filename).name
+    drive_name = f"submission-{assignment_id}-{user.id}-{uuid4().hex}-{original_name}"
     try:
-        with target.open("wb") as output:
-            while chunk := await file.read(1024 * 1024):
-                size += len(chunk)
-                if size > max_size:
-                    target.unlink(missing_ok=True)
-                    raise HTTPException(status_code=413, detail="File must be 10 MB or smaller")
-                output.write(chunk)
-    finally:
-        await file.close()
+        drive_file_id = await asyncio.to_thread(
+            upload_file, content, drive_name, file.content_type
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Unable to store submission file. Please try again.",
+        ) from exc
 
     existing_result = await db.execute(
         select(AssignmentSubmission).where(
@@ -500,10 +509,11 @@ async def submit_assignment_file(
         )
     )
     submission = existing_result.scalar_one_or_none()
-    file_url = f"/uploads/assignments/{assignment_id}/{safe_name}"
+    file_url = None
 
     if submission:
         submission.file_url = file_url
+        submission.drive_file_id = drive_file_id
         submission.external_url = external_url
         submission.status = "SUBMITTED"
     else:
@@ -511,6 +521,7 @@ async def submit_assignment_file(
             assignment_id=assignment_id,
             student_id=user.id,
             file_url=file_url,
+            drive_file_id=drive_file_id,
             external_url=external_url,
             status="SUBMITTED",
         )
@@ -592,30 +603,23 @@ async def get_submission_file(
     if not submission.file_url:
         raise HTTPException(status_code=404, detail="This submission has no file")
 
-    file_path = Path(settings.upload_dir) / submission.file_url.lstrip('/')
-    if not file_path.is_file():
+    if not submission.drive_file_id:
         raise HTTPException(status_code=404, detail="Submitted file is no longer available")
 
-    media_types = {
-        ".pdf": "application/pdf",
-        ".txt": "text/plain",
-        ".png": "image/png",
-        ".jpg": "image/jpeg",
-        ".jpeg": "image/jpeg",
-        ".webp": "image/webp",
-        ".gif": "image/gif",
-        ".doc": "application/msword",
-        ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        ".ppt": "application/vnd.ms-powerpoint",
-        ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-        ".xls": "application/vnd.ms-excel",
-        ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    }
-    return FileResponse(
-        path=file_path,
-        filename=file_path.name,
-        media_type=media_types.get(file_path.suffix.lower(), "application/octet-stream"),
-        content_disposition_type="attachment" if download else "inline",
+    try:
+        content, mime_type = await asyncio.to_thread(download_file, submission.drive_file_id)
+    except Exception as exc:
+        raise HTTPException(status_code=404, detail="Submitted file is no longer available") from exc
+
+    filename = f"submission-{submission.id}"
+    return Response(
+        content=content,
+        media_type=mime_type,
+        headers={
+            "Content-Disposition": (
+                f'{"attachment" if download else "inline"}; filename="{filename}"'
+            )
+        },
     )
 
 # ---------------------------------------------------------
