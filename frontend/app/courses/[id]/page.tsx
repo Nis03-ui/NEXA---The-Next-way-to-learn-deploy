@@ -7,6 +7,7 @@ import { useParams } from "next/navigation"
 import {
   ArrowLeft,
   ArrowUpRight,
+  ArrowDownToLine,
   BookOpen,
   CalendarDays,
   CheckCircle2,
@@ -24,6 +25,7 @@ import {
   assignments,
   courses,
   materials,
+  courseMaterialFileUrl,
   schedule,
   type Assignment,
   type Course,
@@ -565,15 +567,16 @@ function MaterialsList({
 
                   <div className="mt-4 flex flex-wrap gap-2">
                     {item.file_url && (
-                      <a
-                        href={item.file_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-slate-950 px-3 text-xs font-bold text-white"
-                      >
-                        Open file
-                        <ExternalLink size={13} />
-                      </a>
+                      <>
+                        <a href={courseMaterialFileUrl(item.course_id, item.id)} target="_blank" rel="noreferrer" className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-slate-950 px-3 text-xs font-bold text-white">
+                          View PDF
+                          <ExternalLink size={13} />
+                        </a>
+                        <a href={courseMaterialFileUrl(item.course_id, item.id, true)} className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-slate-200 px-3 text-xs font-bold text-slate-700">
+                          Download
+                          <ArrowDownToLine size={13} />
+                        </a>
+                      </>
                     )}
 
                     {item.external_url && (
