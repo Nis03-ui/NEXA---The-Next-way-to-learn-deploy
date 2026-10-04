@@ -17,6 +17,7 @@ import {
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 
 import AppShell from "@/components/layout/AppShell"
 import { users } from "@/lib/api"
@@ -170,7 +171,7 @@ function ProfileContent() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-4xl">
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="mx-auto w-full max-w-4xl">
       <div className="mb-8">
         <Link
           href={user.role === "ADMIN" ? "/admin" : user.role === "TEACHER" ? "/teacher/dashboard" : "/dashboard"}
@@ -192,7 +193,9 @@ function ProfileContent() {
           </div>
 
           {!editing && (
-            <button
+            <motion.button
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.98 }}
               type="button"
               onClick={startEditing}
               className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800"
@@ -205,10 +208,10 @@ function ProfileContent() {
       </div>
 
       {success && (
-        <div className="mb-5 flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+        <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} className className="mb-5 flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
           <Check size={16} />
           {success}
-        </div>
+        </motion.div>
       )}
 
       {error && (
@@ -217,12 +220,12 @@ function ProfileContent() {
         </div>
       )}
 
-      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+      <motion.section layout className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-100 bg-slate-50/70 px-5 py-6 sm:px-8">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-            <div className="grid h-20 w-20 shrink-0 place-items-center rounded-2xl bg-slate-950 text-xl font-black text-white">
+            <motion.div whileHover={{ scale: 1.03 }} className="grid h-20 w-20 shrink-0 place-items-center rounded-2xl bg-slate-950 text-xl font-black text-white">
               {avatarUrl ? <img src={avatarUrl} alt="" className="h-full w-full rounded-2xl object-cover" /> : initials}
-            </div>
+            </motion.div>
 
             <div className="min-w-0">
               <h2 className="text-xl font-bold text-slate-950">
@@ -487,7 +490,8 @@ function ProfileContent() {
           </>
         )}
       </section>
-    </div>
+    </motion.section>
+    </motion.div>
   )
 }
 
