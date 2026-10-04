@@ -160,8 +160,9 @@ export default function SchedulePage() {
 
   return (
     <AppShell>
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
       <div className="mx-auto w-full max-w-6xl space-y-6 pb-8 sm:space-y-8">
-        <section className="relative overflow-hidden rounded-3xl bg-slate-950 p-6 text-white sm:p-8">
+        <motion.section className="relative overflow-hidden rounded-3xl bg-slate-950 p-6 text-white sm:p-8">
           <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-blue-500/10 blur-3xl" />
           <div className="relative">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Learning calendar</p>
@@ -175,11 +176,11 @@ export default function SchedulePage() {
               {canManage && selectedCourse && (
                 <button type="button" onClick={() => { resetForm(); setShowForm(true) }} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-white px-4 text-sm font-semibold text-slate-950">
                   <Plus size={16} /> Add event
-                </button>
+                </motion.button>
               )}
             </div>
           </div>
-        </section>
+        </motion.section>
 
         {error && (
           <div className="flex items-center justify-between gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -272,6 +273,7 @@ export default function SchedulePage() {
           </div>
         </section>
       </div>
+      </motion.div>
     </AppShell>
   )
 }
