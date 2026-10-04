@@ -212,6 +212,7 @@ export default function TeacherDashboard() {
                     </div>
                     <ArrowRight size={16} className="shrink-0 text-slate-400" />
                   </Link>
+                  </motion.div>
                 ))
               )}
             </div>
