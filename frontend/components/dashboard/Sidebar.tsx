@@ -45,7 +45,7 @@ const teacherLinks: NavItem[] = [
 
 const adminLinks: NavItem[] = [
   { name: "Overview", href: "/admin", icon: LayoutDashboard },
-  { name: "Courses", href: "/teacher", icon: GraduationCap },
+  { name: "Courses", href: "/admin/courses", icon: GraduationCap },
   { name: "Users", href: "/admin#users", icon: Users },
   { name: "Announcements", href: "/admin#announcements", icon: Megaphone },
   { name: "Schedule", href: "/schedule", icon: CalendarDays },
