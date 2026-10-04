@@ -1,6 +1,7 @@
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import delete, func, select
+from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import require_roles
@@ -10,6 +11,7 @@ from app.models.content import Content
 from app.models.course import Course
 from app.models.quiz import Quiz
 from app.models.notification import Notification
+from app.models.admin_schedule_event import AdminScheduleEvent
 from app.models.user import Role, User
 from app.schemas.admin import AdminUserOut, RoleUpdate
 
@@ -220,3 +222,112 @@ async def get_announcements(
         grouped[key]["recipients"] += 1
 
     return list(grouped.values())
+
+
+# ============================================================
+# COLLEGE-WIDE SCHEDULE
+# ============================================================
+
+
+def _normalize_admin_datetime(value: datetime) -> datetime:
+    if value.tzinfo is not None:
+        return value.astimezone(timezone.utc).replace(tzinfo=None)
+    return value
+
+
+@router.get("/schedule")
+async def get_admin_schedule(
+    _: User = Depends(require_roles(Role.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(AdminScheduleEvent).order_by(AdminScheduleEvent.start_time.asc()))
+    return result.scalars().all()
+
+
+@router.post("/schedule", status_code=201)
+async def create_admin_schedule(
+    data: dict,
+    admin: User = Depends(require_roles(Role.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+):
+    try:
+        start_time = datetime.fromisoformat(str(data["start_time"]).replace("Z", "+00:00"))
+        end_time = datetime.fromisoformat(str(data["end_time"]).replace("Z", "+00:00"))
+    except (KeyError, ValueError):
+        raise HTTPException(status_code=400, detail="Valid start_time and end_time are required")
+
+    start_time = _normalize_admin_datetime(start_time)
+    end_time = _normalize_admin_datetime(end_time)
+    if end_time <= start_time:
+        raise HTTPException(status_code=400, detail="end_time must be after start_time")
+
+    event = AdminScheduleEvent(
+        title=str(data.get("title", "")).strip(),
+        description=data.get("description"),
+        start_time=start_time,
+        end_time=end_time,
+        location=data.get("location"),
+        meeting_url=data.get("meeting_url"),
+        created_by=admin.id,
+    )
+    if len(event.title) < 2:
+        raise HTTPException(status_code=400, detail="Title is required")
+
+    db.add(event)
+    await db.flush()
+
+    users = (await db.execute(select(User.id).where(User.role.in_([Role.STUDENT, Role.TEACHER])))).scalars().all()
+    if users:
+        db.add_all([
+            Notification(
+                recipient_id=user_id,
+                type="COLLEGE_EVENT",
+                title=f"College Event: {event.title}",
+                message=event.description or f"Scheduled for {event.start_time:%b %d, %Y at %H:%M}.",
+            )
+            for user_id in users
+        ])
+
+    await db.commit()
+    await db.refresh(event)
+    return event
+
+
+@router.put("/schedule/{event_id}")
+async def update_admin_schedule(
+    event_id: int,
+    data: dict,
+    _: User = Depends(require_roles(Role.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+):
+    event = await db.get(AdminScheduleEvent, event_id)
+    if not event:
+        raise HTTPException(status_code=404, detail="College event not found")
+
+    for field in ("title", "description", "location", "meeting_url"):
+        if field in data:
+            setattr(event, field, data[field])
+    if "start_time" in data:
+        event.start_time = _normalize_admin_datetime(datetime.fromisoformat(str(data["start_time"]).replace("Z", "+00:00")))
+    if "end_time" in data:
+        event.end_time = _normalize_admin_datetime(datetime.fromisoformat(str(data["end_time"]).replace("Z", "+00:00")))
+    if event.end_time <= event.start_time:
+        raise HTTPException(status_code=400, detail="end_time must be after start_time")
+
+    await db.commit()
+    await db.refresh(event)
+    return event
+
+
+@router.delete("/schedule/{event_id}")
+async def delete_admin_schedule(
+    event_id: int,
+    _: User = Depends(require_roles(Role.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+):
+    event = await db.get(AdminScheduleEvent, event_id)
+    if not event:
+        raise HTTPException(status_code=404, detail="College event not found")
+    await db.delete(event)
+    await db.commit()
+    return {"message": "College event deleted"}
