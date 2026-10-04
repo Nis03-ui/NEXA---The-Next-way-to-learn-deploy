@@ -80,6 +80,7 @@ async def create_material(
 async def upload_material(
     course_id: int,
     file: UploadFile = File(...),
+    title: str | None = Form(None),
     description: str | None = Form(None),
     published: bool = Form(True),
     user: User = Depends(require_roles(Role.TEACHER, Role.ADMIN)),
@@ -115,7 +116,7 @@ async def upload_material(
     material = CourseMaterial(
         course_id=course_id,
         uploaded_by=user.id,
-        title=Path(file.filename).stem[:200],
+        title=(title or Path(file.filename).stem).strip()[:200],
         description=description,
         file_url=f"/uploads/materials/{course_id}/{safe_name}",
         published=published,
