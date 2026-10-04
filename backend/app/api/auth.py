@@ -315,6 +315,10 @@ async def resend_verification(
     except Exception as exc:
         await db.rollback()
         print(f"[EMAIL VERIFICATION ERROR] {type(exc).__name__}: {exc}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Unable to send verification email. Please try again.",
+        ) from exc
 
     return VerificationResponse(
         message="Verification email sent. Please check your inbox.",
