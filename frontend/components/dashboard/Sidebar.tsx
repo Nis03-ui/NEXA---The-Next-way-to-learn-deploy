@@ -14,6 +14,7 @@ import {
   Sparkles,
   Library,
   CalendarDays,
+  MessagesSquare,
 } from "lucide-react"
 
 import { useAuth } from "@/providers/AuthProvider"
@@ -42,6 +43,7 @@ const teacherLinks: NavItem[] = [
   { name: "AI Tutor", href: "/tutor", icon: MessageSquare },
   { name: "My Courses", href: "/teacher", icon: GraduationCap },
   { name: "Schedule", href: "/schedule", icon: CalendarDays },
+  { name: "Messages", href: "/messages", icon: MessagesSquare },
 ]
 
 const adminLinks: NavItem[] = [
