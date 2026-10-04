@@ -17,7 +17,7 @@ import {
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion } from "framer-motion"
 
 import AppShell from "@/components/layout/AppShell"
 import { users } from "@/lib/api"
@@ -344,16 +344,16 @@ function ProfileContent() {
                 <textarea id="profile-bio" rows={3} maxLength={2000} value={bio} onChange={e => setBio(e.target.value)} disabled={saving} placeholder="Tell learners a little about yourself." className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm outline-none focus:ring-2 focus:ring-slate-100" />
               </div>
               {[
-                ["profile-linkedin","LinkedIn",linkedinUrl,setLinkedinUrl,Linkedin],
-                ["profile-github","GitHub",githubUrl,setGithubUrl,Github],
-                ["profile-portfolio","Portfolio",portfolioUrl,setPortfolioUrl,Globe2],
-                ["profile-twitter","X / Twitter",twitterUrl,setTwitterUrl,Twitter],
-              ].map(([id,label,value,setter,Icon]) => (
-                <div key={id as string}>
-                  <label htmlFor={id as string} className="mb-2 block text-sm font-semibold text-slate-900">{label as string}</label>
+                { id: "profile-linkedin", label: "LinkedIn", value: linkedinUrl, setter: setLinkedinUrl, Icon: Linkedin },
+                { id: "profile-github", label: "GitHub", value: githubUrl, setter: setGithubUrl, Icon: Github },
+                { id: "profile-portfolio", label: "Portfolio", value: portfolioUrl, setter: setPortfolioUrl, Icon: Globe2 },
+                { id: "profile-twitter", label: "X / Twitter", value: twitterUrl, setter: setTwitterUrl, Icon: Twitter },
+              ].map(({ id, label, value, setter: setValue, Icon }) => (
+                <div key={id}>
+                  <label htmlFor={id} className="mb-2 block text-sm font-semibold text-slate-900">{label}</label>
                   <div className="relative">
                     <Icon size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input id={id as string} type="url" value={value as string} onChange={e => (setter as (v:string)=>void)(e.target.value)} disabled={saving} placeholder="https://..." className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3 text-sm outline-none focus:ring-2 focus:ring-slate-100" />
+                    <input id={id as string} type="url" value={value} onChange={e => setValue(e.target.value)} disabled={saving} placeholder="https://..." className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3 text-sm outline-none focus:ring-2 focus:ring-slate-100" />
                   </div>
                 </div>
               ))}
