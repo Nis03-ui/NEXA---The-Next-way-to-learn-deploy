@@ -441,7 +441,6 @@ export default function AssignmentPage() {
           )}
         </section>
       </div>
-      </motion.div>
     </AppShell>
   )
 }
