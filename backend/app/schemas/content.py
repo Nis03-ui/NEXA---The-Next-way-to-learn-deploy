@@ -1,6 +1,4 @@
-
 from datetime import datetime
-
 from pydantic import BaseModel, Field
 
 
@@ -26,8 +24,10 @@ class ContentOut(BaseModel):
     description: str | None
     body: str
     subject: str
+    course_id: int | None
     author_id: int
     published: bool
+    file_url: str | None
     created_at: datetime
     updated_at: datetime | None
 
