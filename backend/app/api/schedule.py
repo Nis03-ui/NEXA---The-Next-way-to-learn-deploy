@@ -1,4 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+
+
+def normalize_datetime(value):
+    """Store timezone-aware API datetimes in the existing UTC-naive DB columns."""
+    if value.tzinfo is not None:
+        from datetime import timezone
+        return value.astimezone(timezone.utc).replace(tzinfo=None)
+    return value
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -86,7 +95,7 @@ async def create_event(
     event = ScheduleEvent(
         course_id=course_id,
         created_by=user.id,
-        **data.model_dump(),
+        **{\n            **data.model_dump(),\n            "start_time": normalize_datetime(data.start_time),\n            "end_time": normalize_datetime(data.end_time),\n        },
     )
 
     db.add(event)
