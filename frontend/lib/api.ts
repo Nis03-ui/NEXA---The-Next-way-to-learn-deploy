@@ -206,7 +206,10 @@ export type AdminStats = {
   total_admins: number
   total_content: number
   published_content: number
+  total_courses: number
   total_quizzes: number
+  chat_sessions?: number
+  api_health?: string
 }
 
 /* =========================================================
