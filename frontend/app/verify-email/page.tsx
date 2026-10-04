@@ -24,13 +24,14 @@ function VerifyEmailContent() {
   )
 
   useEffect(() => {
-    if (!token) return
+    const verificationToken = token
+    if (!verificationToken) return
 
     let cancelled = false
 
     async function verify() {
       try {
-        const result = await auth.verifyEmail(token)
+        const result = await auth.verifyEmail(verificationToken)
         if (cancelled) return
         setStatus("success")
         setMessage(result.message || "Your email has been verified.")
