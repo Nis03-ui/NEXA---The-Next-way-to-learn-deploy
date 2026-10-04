@@ -27,6 +27,11 @@ class Course(Base):
         index=True,
     )
 
+    thumbnail_url: Mapped[str | None] = mapped_column(
+        String(1000),
+        nullable=True,
+    )
+
     teacher_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
