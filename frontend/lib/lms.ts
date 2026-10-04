@@ -140,6 +140,9 @@ export const courses = {
   get: (id: number) =>
     api<Course>(`/courses/${id}`),
 
+  teacher: (id: number) =>
+    api<{ id: number; name: string; email: string; avatar_url?: string | null; bio?: string | null }>(`/courses/${id}/teacher`),
+
   create: (data: {
     title: string
     description?: string
