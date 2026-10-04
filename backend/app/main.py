@@ -44,6 +44,9 @@ async def lifespan(app: FastAPI):
         await conn.execute(text(
             "CREATE INDEX IF NOT EXISTS ix_contents_course_id ON contents (course_id)"
         ))
+        await conn.execute(text(
+            "ALTER TABLE user_profiles ALTER COLUMN avatar_url TYPE TEXT"
+        ))
 
     yield
 
