@@ -70,7 +70,15 @@ export default function Sidebar({ mobile = false, onNavigate }: SidebarProps) {
         : "/dashboard"
 
   function isActive(item: NavItem) {
-    const basePath = item.href.split("#")[0]
+    const [basePath, hash] = item.href.split("#")
+
+    if (hash) {
+      return pathname === basePath && window.location.hash === `#${hash}`
+    }
+
+    if (item.href === "/admin") {
+      return pathname === "/admin"
+    }
 
     if (item.href === "/teacher/dashboard") {
       return pathname === "/teacher/dashboard"
