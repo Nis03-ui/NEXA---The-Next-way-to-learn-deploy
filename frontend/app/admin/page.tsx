@@ -184,7 +184,7 @@ export default function AdminPage() {
     <AppShell allowedRoles={["ADMIN"]}>
       <div className="mx-auto w-full max-w-7xl space-y-6 pb-10 sm:space-y-8">
         {/* Header */}
-        <section className="relative overflow-hidden rounded-3xl bg-slate-950 p-5 text-white sm:p-7 lg:p-8">
+        <motion.section className="relative overflow-hidden rounded-3xl bg-slate-950 p-5 text-white sm:p-7 lg:p-8">
           <div className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-cyan-400/10 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-24 left-1/3 h-56 w-56 rounded-full bg-blue-500/10 blur-3xl" />
 
@@ -205,7 +205,7 @@ export default function AdminPage() {
               </p>
             </div>
 
-            <button
+            <motion.button whileTap={{ scale: 0.97 }}
               type="button"
               onClick={() => loadDashboard(true)}
               disabled={refreshing}
@@ -216,9 +216,9 @@ export default function AdminPage() {
                 className={refreshing ? "animate-spin" : ""}
               />
               {refreshing ? "Refreshing..." : "Refresh"}
-            </button>
+            </motion.button>
           </div>
-        </section>
+        </motion.section>
 
         {/* Error */}
         {error && (
@@ -620,6 +620,7 @@ export default function AdminPage() {
           />
         </section>
       </div>
+      </motion.div>
     </AppShell>
   )
 }
