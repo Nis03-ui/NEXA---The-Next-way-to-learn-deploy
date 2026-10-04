@@ -148,290 +148,158 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="h-screen min-h-screen overflow-hidden bg-[#f8fafc]">
-      <div className="grid h-full min-h-full lg:grid-cols-[0.9fr_1.1fr]">
-        {/* Brand panel */}
-        <section ref={visualRef} className="relative hidden overflow-hidden bg-slate-950 p-10 text-white lg:flex lg:flex-col lg:justify-between">
-          <div className="pointer-events-none absolute inset-0 opacity-40">
-            <div className="register-orb absolute -left-20 top-24 h-64 w-64 rounded-full bg-blue-600/20 blur-3xl" />
-            <div className="register-orb absolute bottom-0 right-0 h-72 w-72 rounded-full bg-violet-600/15 blur-3xl" />
-            <div className="absolute -right-32 top-20 h-80 w-80 rounded-full bg-blue-600/20 blur-3xl" />
-            <div className="absolute bottom-0 left-0 h-96 w-96 rounded-full bg-violet-600/10 blur-3xl" />
-            <div className="nexa-dot-grid absolute inset-0 opacity-10" />
-          </div>
+    <main className="min-h-screen overflow-hidden bg-[#f5f7fb] text-slate-950">
+      <div className="grid min-h-screen lg:grid-cols-[1.05fr_.95fr]">
+        <section
+          ref={visualRef}
+          className="relative hidden overflow-hidden bg-slate-950 lg:flex lg:min-h-screen lg:flex-col lg:justify-between"
+        >
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(59,130,246,.24),transparent_34%),radial-gradient(circle_at_80%_75%,rgba(139,92,246,.20),transparent_35%)]" />
+          <div className="register-orb absolute left-[12%] top-[22%] h-32 w-32 rounded-full bg-blue-500/20 blur-2xl" />
+          <div className="register-orb absolute right-[16%] top-[18%] h-20 w-20 rounded-full bg-violet-400/20 blur-xl" />
+          <div className="register-orb absolute bottom-[18%] left-[35%] h-24 w-24 rounded-full bg-cyan-400/10 blur-2xl" />
 
-          <Link
-            href="/"
-            className="relative z-10 flex items-center gap-3"
-          >
-            <div className="grid h-10 w-10 place-items-center rounded-xl bg-white text-sm font-bold text-slate-950">
+          <div className="relative z-10 flex items-center gap-3 p-10">
+            <div className="grid h-11 w-11 place-items-center rounded-2xl bg-white text-sm font-black text-slate-950 shadow-xl">
               N
             </div>
-
             <div>
-              <p className="text-sm font-bold">NEXA</p>
-              <p className="text-[10px] uppercase tracking-[0.18em] text-slate-500">
+              <p className="text-lg font-black tracking-tight text-white">NEXA</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[.2em] text-slate-500">
                 The Next Way to Learn
               </p>
             </div>
-          </Link>
+          </div>
 
-          <div className="relative z-10 max-w-xl">
-            <div className="mb-7 grid h-12 w-12 place-items-center rounded-2xl border border-white/10 bg-white/10">
-              <Brain size={22} />
-            </div>
-
-            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-blue-400">
-              Your learning companion
-            </p>
-
-            <h1 className="text-5xl font-bold leading-[1.05] tracking-[-0.04em]">
+          <div className="relative z-10 px-10 pb-16 xl:px-16">
+            <motion.div
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: .6 }}
+              className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[.06] px-3 py-1.5 text-xs font-medium text-slate-300 backdrop-blur"
+            >
+              <Brain size={13} className="text-blue-300" />
+              Your intelligent learning companion
+            </motion.div>
+            <h1 className="max-w-2xl text-5xl font-black leading-[.98] tracking-[-.055em] text-white xl:text-7xl">
               Start learning
-              <span className="block text-slate-500">
+              <span className="block bg-gradient-to-r from-blue-300 via-cyan-200 to-violet-300 bg-clip-text text-transparent">
                 differently.
               </span>
             </h1>
-
-            <p className="mt-6 max-w-md text-base leading-7 text-slate-400">
-              Turn your course material into an interactive
-              learning experience with NEXA.
+            <p className="mt-7 max-w-xl text-base leading-7 text-slate-400">
+              Turn your course material into an interactive learning experience with NEXA.
             </p>
 
-            <div className="mt-10 flex flex-wrap gap-3">
+            <div className="mt-9 grid max-w-xl grid-cols-3 gap-3">
               {[
-                "AI tutoring",
-                "Smart quizzes",
-                "Course context",
-              ].map((item) => (
-                <span
-                  key={item}
-                  className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-400"
-                >
-                  {item}
-                </span>
+                ["AI Tutor", "Context-aware help"],
+                ["Smart Study", "Practice & review"],
+                ["Your Progress", "Learn with insight"],
+              ].map(([title, text]) => (
+                <div key={title} className="rounded-2xl border border-white/10 bg-white/[.05] p-4 backdrop-blur">
+                  <Brain size={17} className="mb-5 text-blue-300" />
+                  <p className="text-sm font-semibold text-white">{title}</p>
+                  <p className="mt-1 text-[11px] leading-4 text-slate-500">{text}</p>
+                </div>
               ))}
             </div>
           </div>
 
-          <p className="relative z-10 text-xs text-slate-600">
-            © {new Date().getFullYear()} NEXA
+          <p className="relative z-10 px-10 pb-7 text-[11px] text-slate-600">
+            Secure access · NEXA
           </p>
         </section>
 
-        {/* Form */}
-        <section className="flex min-h-0 items-center justify-center overflow-y-auto px-4 py-5 sm:px-8 sm:py-7 lg:px-12 lg:py-8">
-          <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="w-full max-w-lg py-1 sm:py-2">
-            <Link
-              href="/"
-              className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition hover:text-slate-950"
-            >
-              <ArrowLeft size={16} />
-              Back to NEXA
-            </Link>
+        <section className="flex min-h-screen items-center justify-center px-4 py-5 sm:px-6 sm:py-7">
+          <motion.div
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: .5 }}
+            className="w-full max-w-md"
+          >
+            <div className="mb-5 flex items-center justify-between">
+              <Link href="/" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-950">
+                <ArrowLeft size={15} /> NEXA
+              </Link>
+              <span className="rounded-full bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-[.15em] text-slate-400 shadow-sm ring-1 ring-slate-200">
+                Sign up
+              </span>
+            </div>
 
-            <div className="nexa-card overflow-hidden">
-              <div className="border-b border-slate-100 px-6 py-6 sm:px-8">
-                <div className="mb-1 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-blue-600">
-                  <UserRound size={14} />
-                  New account
+            <div className="rounded-[2rem] border border-slate-200/80 bg-white p-5 shadow-[0_24px_70px_-35px_rgba(15,23,42,.35)] sm:p-7">
+              <div className="mb-5">
+                <div className="mb-4 grid h-11 w-11 place-items-center rounded-2xl bg-slate-950 text-white shadow-lg">
+                  <UserRound size={19} />
                 </div>
-
-                <h2 className="text-2xl font-bold tracking-tight text-slate-950">
-                  Create your account
-                </h2>
-
-                <p className="mt-2 text-sm leading-6 text-slate-500">
-                  Choose how you want to use NEXA and start learning.
+                <h2 className="text-3xl font-black tracking-[-.035em]">Create your account</h2>
+                <p className="mt-1.5 text-sm leading-6 text-slate-500">
+                  Join NEXA and make your learning more intelligent.
                 </p>
               </div>
 
-              <form
-                onSubmit={handleSubmit}
-                noValidate
-                className="space-y-5 px-6 py-6 sm:px-8 sm:py-8"
-              >
-                {serverError && (
-                  <div
-                    role="alert"
-                    className="flex gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-700"
-                  >
-                    <X className="mt-0.5 shrink-0" size={17} />
-                    <span>{serverError}</span>
-                  </div>
-                )}
+              {serverError && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0, y: -6 }}
+                  animate={{ opacity: 1, height: "auto", y: 0 }}
+                  role="alert"
+                  className="mb-4 flex gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-5 text-red-700"
+                >
+                  <X size={17} className="mt-0.5 shrink-0" />
+                  <span>{serverError}</span>
+                </motion.div>
+              )}
 
-                {/* Name */}
+              <form onSubmit={handleSubmit} noValidate className="space-y-4">
                 <div>
-                  <label
-                    htmlFor="name"
-                    className="mb-2 block text-sm font-semibold text-slate-700"
-                  >
+                  <label htmlFor="name" className="mb-1.5 block text-sm font-bold text-slate-800">
                     Full name
                   </label>
-
                   <input
                     id="name"
                     type="text"
                     value={name}
                     onChange={(event) => {
                       setName(event.target.value)
-                      if (errors.name) {
-                        setErrors((current) => ({
-                          ...current,
-                          name: undefined,
-                        }))
-                      }
+                      if (errors.name) setErrors((current) => ({ ...current, name: undefined }))
                     }}
                     placeholder="Your full name"
                     autoComplete="name"
                     disabled={loading}
                     aria-invalid={!!errors.name}
-                    className={`nexa-focus h-11 w-full rounded-xl border bg-white px-3.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 ${
-                      errors.name
-                        ? "border-red-300"
-                        : "border-slate-200 focus:border-blue-500"
-                    }`}
+                    className={`h-11 w-full rounded-2xl border bg-slate-50 px-4 text-base text-slate-950 outline-none transition focus:bg-white focus:ring-4 ${errors.name ? "border-red-300 focus:border-red-400 focus:ring-red-100" : "border-slate-200 focus:border-blue-500 focus:ring-blue-50"}`}
                   />
-
-                  {errors.name && (
-                    <p className="mt-1.5 text-xs text-red-600">
-                      {errors.name}
-                    </p>
-                  )}
+                  {errors.name && <p className="mt-1 text-xs font-medium text-red-600">{errors.name}</p>}
                 </div>
 
-                {/* Email */}
                 <div>
-                  <label
-                    htmlFor="email"
-                    className="mb-2 block text-sm font-semibold text-slate-700"
-                  >
+                  <label htmlFor="email" className="mb-1.5 block text-sm font-bold text-slate-800">
                     Email address
                   </label>
-
                   <input
                     id="email"
                     type="text"
+                    inputMode="email"
+                    autoCapitalize="none"
+                    autoCorrect="off"
                     value={email}
                     onChange={(event) => {
                       setEmail(event.target.value)
-                      if (errors.email) {
-                        setErrors((current) => ({
-                          ...current,
-                          email: undefined,
-                        }))
-                      }
+                      if (errors.email) setErrors((current) => ({ ...current, email: undefined }))
                     }}
                     placeholder="you@example.com"
                     autoComplete="email"
                     disabled={loading}
                     aria-invalid={!!errors.email}
-                    className={`nexa-focus h-11 w-full rounded-xl border bg-white px-3.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 ${
-                      errors.email
-                        ? "border-red-300"
-                        : "border-slate-200 focus:border-blue-500"
-                    }`}
+                    className={`h-11 w-full rounded-2xl border bg-slate-50 px-4 text-base text-slate-950 outline-none transition focus:bg-white focus:ring-4 ${errors.email ? "border-red-300 focus:border-red-400 focus:ring-red-100" : "border-slate-200 focus:border-blue-500 focus:ring-blue-50"}`}
                   />
-
-                  {errors.email && (
-                    <p className="mt-1.5 text-xs text-red-600">
-                      {errors.email}
-                    </p>
-                  )}
+                  {errors.email && <p className="mt-1 text-xs font-medium text-red-600">{errors.email}</p>}
                 </div>
 
-                {/* Role */}
                 <div>
-                  <div className="mb-2 flex items-center justify-between">
-                    <label className="text-sm font-semibold text-slate-700">
-                      I am joining NEXA as
-                    </label>
-
-                    <span className="text-xs text-slate-400">
-                      Choose one
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      disabled={loading}
-                      onClick={() => setRole("STUDENT")}
-                      className={`rounded-xl border p-4 text-left transition ${
-                        role === "STUDENT"
-                          ? "border-blue-500 bg-blue-50 ring-2 ring-blue-500/10"
-                          : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
-                      }`}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="grid h-9 w-9 place-items-center rounded-lg bg-blue-100 text-blue-600">
-                          <GraduationCap size={19} />
-                        </div>
-
-                        {role === "STUDENT" && (
-                          <span className="grid h-5 w-5 place-items-center rounded-full bg-blue-600 text-white">
-                            <Check size={13} />
-                          </span>
-                        )}
-                      </div>
-
-                      <p className="mt-3 text-sm font-semibold text-slate-900">
-                        Student
-                      </p>
-
-                      <p className="mt-1 text-xs leading-5 text-slate-500">
-                        Learn, practice and track your progress.
-                      </p>
-                    </button>
-
-                    <button
-                      type="button"
-                      disabled={loading}
-                      onClick={() => setRole("TEACHER")}
-                      className={`rounded-xl border p-4 text-left transition ${
-                        role === "TEACHER"
-                          ? "border-violet-500 bg-violet-50 ring-2 ring-violet-500/10"
-                          : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
-                      }`}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="grid h-9 w-9 place-items-center rounded-lg bg-violet-100 text-violet-600">
-                          <UsersRound size={19} />
-                        </div>
-
-                        {role === "TEACHER" && (
-                          <span className="grid h-5 w-5 place-items-center rounded-full bg-violet-600 text-white">
-                            <Check size={13} />
-                          </span>
-                        )}
-                      </div>
-
-                      <p className="mt-3 text-sm font-semibold text-slate-900">
-                        Teacher
-                      </p>
-
-                      <p className="mt-1 text-xs leading-5 text-slate-500">
-                        Create content and manage quizzes.
-                      </p>
-                    </button>
-                  </div>
-
-                  {errors.role && (
-                    <p className="mt-1.5 text-xs text-red-600">
-                      {errors.role}
-                    </p>
-                  )}
-                </div>
-
-                {/* Password */}
-                <div>
-                  <label
-                    htmlFor="password"
-                    className="mb-2 block text-sm font-semibold text-slate-700"
-                  >
+                  <label htmlFor="password" className="mb-1.5 block text-sm font-bold text-slate-800">
                     Password
                   </label>
-
                   <div className="relative">
                     <input
                       id="password"
@@ -439,182 +307,123 @@ export default function RegisterPage() {
                       value={password}
                       onChange={(event) => {
                         setPassword(event.target.value)
-                        if (errors.password) {
-                          setErrors((current) => ({
-                            ...current,
-                            password: undefined,
-                          }))
-                        }
+                        if (errors.password) setErrors((current) => ({ ...current, password: undefined }))
                       }}
                       placeholder="Create a strong password"
                       autoComplete="new-password"
                       disabled={loading}
                       aria-invalid={!!errors.password}
-                      className={`nexa-focus h-11 w-full rounded-xl border bg-white px-3.5 pr-11 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 ${
-                        errors.password
-                          ? "border-red-300"
-                          : "border-slate-200 focus:border-blue-500"
-                      }`}
+                      className={`h-11 w-full rounded-2xl border bg-slate-50 px-4 pr-12 text-base text-slate-950 outline-none transition focus:bg-white focus:ring-4 ${errors.password ? "border-red-300 focus:border-red-400 focus:ring-red-100" : "border-slate-200 focus:border-blue-500 focus:ring-blue-50"}`}
                     />
-
                     <button
                       type="button"
-                      onClick={() =>
-                        setShowPassword((current) => !current)
-                      }
+                      onClick={() => setShowPassword((current) => !current)}
                       disabled={loading}
-                      aria-label={
-                        showPassword
-                          ? "Hide password"
-                          : "Show password"
-                      }
-                      className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      className="absolute right-2 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700"
                     >
-                      {showPassword ? (
-                        <EyeOff size={17} />
-                      ) : (
-                        <Eye size={17} />
-                      )}
+                      {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
                     </button>
                   </div>
-
-                  {password && (
-                    <div className="mt-3 space-y-1.5">
-                      {[
-                        [passwordChecks.length, "At least 8 characters"],
-                        [passwordChecks.letter, "Contains a letter"],
-                        [passwordChecks.number, "Contains a number"],
-                      ].map(([valid, label]) => (
-                        <div
-                          key={label as string}
-                          className={`flex items-center gap-2 text-xs ${
-                            valid
-                              ? "text-emerald-600"
-                              : "text-slate-400"
-                          }`}
-                        >
-                          <span className="grid h-4 w-4 place-items-center">
-                            {valid ? (
-                              <Check size={13} />
-                            ) : (
-                              <span className="h-1 w-1 rounded-full bg-current" />
-                            )}
-                          </span>
-                          {label as string}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {errors.password && (
-                    <p className="mt-1.5 text-xs text-red-600">
-                      {errors.password}
-                    </p>
-                  )}
+                  <p className="mt-1 text-[11px] text-slate-400">8+ characters · at least one letter and one number</p>
+                  {errors.password && <p className="mt-1 text-xs font-medium text-red-600">{errors.password}</p>}
                 </div>
 
-                {/* Confirm password */}
                 <div>
-                  <label
-                    htmlFor="confirmPassword"
-                    className="mb-2 block text-sm font-semibold text-slate-700"
-                  >
+                  <label htmlFor="confirmPassword" className="mb-1.5 block text-sm font-bold text-slate-800">
                     Confirm password
                   </label>
-
                   <div className="relative">
                     <input
                       id="confirmPassword"
-                      type={
-                        showConfirmPassword
-                          ? "text"
-                          : "password"
-                      }
+                      type={showConfirmPassword ? "text" : "password"}
                       value={confirmPassword}
                       onChange={(event) => {
                         setConfirmPassword(event.target.value)
-                        if (errors.confirmPassword) {
-                          setErrors((current) => ({
-                            ...current,
-                            confirmPassword: undefined,
-                          }))
-                        }
+                        if (errors.confirmPassword) setErrors((current) => ({ ...current, confirmPassword: undefined }))
                       }}
                       placeholder="Enter your password again"
                       autoComplete="new-password"
                       disabled={loading}
                       aria-invalid={!!errors.confirmPassword}
-                      className={`nexa-focus h-11 w-full rounded-xl border bg-white px-3.5 pr-11 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 ${
-                        errors.confirmPassword
-                          ? "border-red-300"
-                          : "border-slate-200 focus:border-blue-500"
-                      }`}
+                      className={`h-11 w-full rounded-2xl border bg-slate-50 px-4 pr-12 text-base text-slate-950 outline-none transition focus:bg-white focus:ring-4 ${errors.confirmPassword ? "border-red-300 focus:border-red-400 focus:ring-red-100" : "border-slate-200 focus:border-blue-500 focus:ring-blue-50"}`}
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword((current) => !current)}
+                      disabled={loading}
+                      aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                      className="absolute right-2 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                    >
+                      {showConfirmPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                    </button>
+                  </div>
+                  {errors.confirmPassword && <p className="mt-1 text-xs font-medium text-red-600">{errors.confirmPassword}</p>}
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-sm font-bold text-slate-800">
+                    I am joining NEXA as
+                  </label>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <button
+                      type="button"
+                      disabled={loading}
+                      onClick={() => setRole("STUDENT")}
+                      className={`min-h-16 rounded-2xl border px-3 py-2.5 text-left transition ${role === "STUDENT" ? "border-blue-500 bg-blue-50 ring-2 ring-blue-500/10" : "border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-white"}`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center gap-2 text-sm font-bold text-slate-900"><GraduationCap size={17} className="text-blue-600" />Student</span>
+                        {role === "STUDENT" && <Check size={15} className="text-blue-600" />}
+                      </div>
+                      <p className="mt-1 text-[11px] text-slate-500">Learn and track progress</p>
+                    </button>
 
                     <button
                       type="button"
-                      onClick={() =>
-                        setShowConfirmPassword(
-                          (current) => !current,
-                        )
-                      }
                       disabled={loading}
-                      aria-label={
-                        showConfirmPassword
-                          ? "Hide password"
-                          : "Show password"
-                      }
-                      className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                      onClick={() => setRole("TEACHER")}
+                      className={`min-h-16 rounded-2xl border px-3 py-2.5 text-left transition ${role === "TEACHER" ? "border-violet-500 bg-violet-50 ring-2 ring-violet-500/10" : "border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-white"}`}
                     >
-                      {showConfirmPassword ? (
-                        <EyeOff size={17} />
-                      ) : (
-                        <Eye size={17} />
-                      )}
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center gap-2 text-sm font-bold text-slate-900"><UsersRound size={17} className="text-violet-600" />Teacher</span>
+                        {role === "TEACHER" && <Check size={15} className="text-violet-600" />}
+                      </div>
+                      <p className="mt-1 text-[11px] text-slate-500">Create and manage content</p>
                     </button>
                   </div>
-
-                  {errors.confirmPassword && (
-                    <p className="mt-1.5 text-xs text-red-600">
-                      {errors.confirmPassword}
-                    </p>
-                  )}
+                  {errors.role && <p className="mt-1 text-xs font-medium text-red-600">{errors.role}</p>}
                 </div>
 
                 <button
                   type="submit"
                   disabled={loading}
-                  className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-slate-950 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="group flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 text-sm font-bold text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-slate-800 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {loading ? (
                     <>
-                      <Loader2
-                        size={17}
-                        className="animate-spin"
-                      />
-                      Creating your account...
+                      <Loader2 size={17} className="animate-spin" />
+                      Creating account…
                     </>
                   ) : (
-                    "Create account"
+                    <>Create account <ArrowLeft size={16} className="rotate-180 transition-transform group-hover:translate-x-1" /></>
                   )}
                 </button>
               </form>
 
-              <div className="border-t border-slate-100 px-6 py-5 text-center sm:px-8">
-                <p className="text-sm text-slate-500">
-                  Already have an account?{" "}
-                  <Link
-                    href="/login"
-                    className="font-semibold text-blue-600 hover:text-blue-700"
-                  >
-                    Sign in
-                  </Link>
-                </p>
-              </div>
+              <div className="my-5 h-px bg-slate-100" />
+
+              <p className="text-center text-sm text-slate-500">
+                Already have an account?{" "}
+                <Link href="/login" className="font-bold text-slate-950 hover:text-blue-600">
+                  Sign in
+                </Link>
+              </p>
             </div>
           </motion.div>
         </section>
       </div>
     </main>
   )
+
 }
