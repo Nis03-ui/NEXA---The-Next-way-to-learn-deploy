@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.security import current_user
 from app.db.session import get_db
 from app.models.user import User
+from app.models.user_profile import UserProfile
 from app.schemas.auth import ProfileUpdateRequest, UserOut
 
 
@@ -20,8 +21,30 @@ router = APIRouter(
 )
 async def me(
     user: User = Depends(current_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    return user
+    profile = (await db.execute(
+        select(UserProfile).where(UserProfile.user_id == user.id)
+    )).scalar_one_or_none()
+
+    if profile is None:
+        profile = UserProfile(user_id=user.id)
+        db.add(profile)
+        await db.commit()
+        await db.refresh(profile)
+
+    return {
+        "id": user.id,
+        "name": user.name,
+        "email": user.email,
+        "role": user.role,
+        "avatar_url": profile.avatar_url,
+        "bio": profile.bio,
+        "linkedin_url": profile.linkedin_url,
+        "github_url": profile.github_url,
+        "portfolio_url": profile.portfolio_url,
+        "twitter_url": profile.twitter_url,
+    }
 
 
 @router.patch(
@@ -57,7 +80,39 @@ async def update_me(
 
             user.email = new_email
 
-    await db.commit()
-    await db.refresh(user)
+    profile = (await db.execute(
+        select(UserProfile).where(UserProfile.user_id == user.id)
+    )).scalar_one_or_none()
 
-    return user
+    if profile is None:
+        profile = UserProfile(user_id=user.id)
+        db.add(profile)
+
+    profile_fields = (
+        "avatar_url",
+        "bio",
+        "linkedin_url",
+        "github_url",
+        "portfolio_url",
+        "twitter_url",
+    )
+    for field in profile_fields:
+        value = getattr(data, field)
+        if value is not None:
+            setattr(profile, field, value.strip() or None)
+
+    await db.commit()
+    await db.refresh(profile)
+
+    return {
+        "id": user.id,
+        "name": user.name,
+        "email": user.email,
+        "role": user.role,
+        "avatar_url": profile.avatar_url,
+        "bio": profile.bio,
+        "linkedin_url": profile.linkedin_url,
+        "github_url": profile.github_url,
+        "portfolio_url": profile.portfolio_url,
+        "twitter_url": profile.twitter_url,
+    }
