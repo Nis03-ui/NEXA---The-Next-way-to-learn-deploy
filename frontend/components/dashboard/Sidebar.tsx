@@ -39,12 +39,14 @@ const studentLinks: NavItem[] = [
 
 const teacherLinks: NavItem[] = [
   { name: "Overview", href: "/teacher/dashboard", icon: LayoutDashboard },
+  { name: "AI Tutor", href: "/tutor", icon: MessageSquare },
   { name: "My Courses", href: "/teacher", icon: GraduationCap },
   { name: "Schedule", href: "/schedule", icon: CalendarDays },
 ]
 
 const adminLinks: NavItem[] = [
   { name: "Overview", href: "/admin", icon: LayoutDashboard },
+  { name: "AI Tutor", href: "/tutor", icon: MessageSquare },
   { name: "Courses", href: "/admin/courses", icon: GraduationCap },
   { name: "Users", href: "/admin/users", icon: Users },
   { name: "Announcements", href: "/admin/announcements", icon: Megaphone },
