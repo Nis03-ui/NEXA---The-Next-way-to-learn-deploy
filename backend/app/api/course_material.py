@@ -1,6 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from pathlib import Path
+from uuid import uuid4
 
 from app.core.security import current_user, require_roles
 from app.db.session import get_db
@@ -68,6 +70,68 @@ async def create_material(
     return material
 
 
+
+
+@router.post(
+    "/{course_id}/materials/upload",
+    response_model=CourseMaterialResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def upload_material(
+    course_id: int,
+    file: UploadFile = File(...),
+    description: str | None = Form(None),
+    published: bool = Form(True),
+    user: User = Depends(require_roles(Role.TEACHER, Role.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+):
+    course = await db.get(Course, course_id)
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    if user.role != Role.ADMIN and course.teacher_id != user.id:
+        raise HTTPException(status_code=403, detail="You do not own this course")
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="A file is required")
+
+    max_size = 10 * 1024 * 1024
+    storage_dir = Path("uploads") / "materials" / str(course_id)
+    storage_dir.mkdir(parents=True, exist_ok=True)
+    suffix = Path(file.filename).suffix
+    safe_name = f"{uuid4().hex}{suffix}"
+    target = storage_dir / safe_name
+
+    size = 0
+    try:
+        with target.open("wb") as output:
+            while chunk := await file.read(1024 * 1024):
+                size += len(chunk)
+                if size > max_size:
+                    target.unlink(missing_ok=True)
+                    raise HTTPException(status_code=413, detail="File must be 10 MB or smaller")
+                output.write(chunk)
+    finally:
+        await file.close()
+
+    material = CourseMaterial(
+        course_id=course_id,
+        uploaded_by=user.id,
+        title=Path(file.filename).stem[:200],
+        description=description,
+        file_url=f"/uploads/materials/{course_id}/{safe_name}",
+        published=published,
+    )
+    db.add(material)
+    await db.flush()
+    await notify_course_students(
+        db=db,
+        course_id=course_id,
+        notification_type="MATERIAL",
+        title="New Course Material",
+        message=f"New material: {material.title}",
+    )
+    await db.commit()
+    await db.refresh(material)
+    return material
 @router.get(
     "/{course_id}/materials",
     response_model=list[CourseMaterialResponse],
