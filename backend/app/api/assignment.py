@@ -524,7 +524,7 @@ async def submit_assignment_file(
                 await asyncio.to_thread(delete_file, submission.drive_file_id)
             except Exception:
                 pass
-        submission.file_url = file_url
+        submission.file_url = f"/api/v1/assignments/{assignment_id}/submissions/{submission.id}/file"
         submission.drive_file_id = drive_file_id
         submission.external_url = external_url
         submission.status = "SUBMITTED"
@@ -538,6 +538,8 @@ async def submit_assignment_file(
             status="SUBMITTED",
         )
         db.add(submission)
+        await db.flush()
+        submission.file_url = f"/api/v1/assignments/{assignment_id}/submissions/{submission.id}/file"
 
     await db.commit()
     await db.refresh(submission)
@@ -612,10 +614,8 @@ async def get_submission_file(
     else:
         await check_course_teacher(assignment.course_id, user, db)
 
-    if not submission.file_url:
-        raise HTTPException(status_code=404, detail="This submission has no file")
-
     if not submission.drive_file_id:
+        raise HTTPException(status_code=404, detail="This submission has no file")
         raise HTTPException(status_code=404, detail="Submitted file is no longer available")
 
     try:
