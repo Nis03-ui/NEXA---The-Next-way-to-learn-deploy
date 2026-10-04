@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+import asyncio
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -23,38 +24,25 @@ from app.db.session import engine
 from app.models import *
 
 
+async def _promote_demo_admin():
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(text(
+                "UPDATE users SET role = 'ADMIN' WHERE lower(email) = lower(:email)"
+            ), {"email": "bhandarinishan69@gmail.com"})
+    except Exception:
+        pass
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Create database tables when the application starts.
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-        # The deployed database was created before course_id was added to
-        # quizzes/contents. create_all() does not alter existing tables, so
-        # keep the live schema compatible with the current ORM models.
-        await conn.execute(text(
-            "ALTER TABLE quizzes ADD COLUMN IF NOT EXISTS course_id INTEGER"
-        ))
-        await conn.execute(text(
-            "CREATE INDEX IF NOT EXISTS ix_quizzes_course_id ON quizzes (course_id)"
-        ))
-        await conn.execute(text(
-            "ALTER TABLE contents ADD COLUMN IF NOT EXISTS course_id INTEGER"
-        ))
-        await conn.execute(text(
-            "CREATE INDEX IF NOT EXISTS ix_contents_course_id ON contents (course_id)"
-        ))
-        await conn.execute(text(
-            "ALTER TABLE user_profiles ALTER COLUMN avatar_url TYPE TEXT"
-        ))
-        # One-time demo admin promotion. Remove this block after the account is promoted.
-        await conn.execute(text(
-            "UPDATE users SET role = 'ADMIN' WHERE lower(email) = lower(:email)"
-        ), {"email": "bhandarinishan69@gmail.com"})
+    asyncio.create_task(_promote_demo_admin())
 
     yield
 
-    # Dispose database connections when the application shuts down.
     await engine.dispose()
 
 
