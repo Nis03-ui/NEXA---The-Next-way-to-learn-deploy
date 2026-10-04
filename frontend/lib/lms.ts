@@ -110,6 +110,18 @@ export type ScheduleEvent = {
   created_at?: string
 }
 
+export type AdminScheduleEvent = {
+  id: number
+  title: string
+  description?: string | null
+  start_time: string
+  end_time: string
+  location?: string | null
+  meeting_url?: string | null
+  created_by: number
+  created_at?: string
+}
+
 export type Notification = {
   id: number
   recipient_id: number
@@ -424,6 +436,13 @@ export const schedule = {
         method: "DELETE",
       },
     ),
+}
+
+export const adminSchedule = {
+  list: () => api<AdminScheduleEvent[]>("/admin/schedule"),
+  create: (data: { title: string; description?: string; start_time: string; end_time: string; location?: string; meeting_url?: string }) => api<AdminScheduleEvent>("/admin/schedule", { method: "POST", body: JSON.stringify(data) }),
+  update: (id: number, data: { title?: string; description?: string; start_time?: string; end_time?: string; location?: string; meeting_url?: string }) => api<AdminScheduleEvent>("/admin/schedule/" + id, { method: "PUT", body: JSON.stringify(data) }),
+  delete: (id: number) => api<{ message: string }>("/admin/schedule/" + id, { method: "DELETE" }),
 }
 
 export const notifications = {
