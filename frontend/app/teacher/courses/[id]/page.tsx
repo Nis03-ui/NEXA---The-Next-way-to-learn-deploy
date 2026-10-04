@@ -1278,17 +1278,22 @@ export default function TeacherCoursePage() {
                           )}
 
                           {material.file_url && (
-                            <button
-                              type="button"
-                              onClick={() => void openTeacherProtectedFile(
+                            <div className="flex flex-wrap gap-2">
+                              <button type="button" onClick={() => void openTeacherProtectedFile(
                                 `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"}/courses/${material.course_id}/materials/${material.id}/file`,
                                 false,
                                 material.title,
-                              )}
-                              className="inline-flex min-h-10 items-center rounded-xl bg-slate-100 px-3 text-xs font-semibold text-slate-700 hover:bg-slate-200"
-                            >
-                              Open file
-                            </button>
+                              )} className="inline-flex min-h-10 items-center rounded-xl bg-slate-100 px-3 text-xs font-semibold text-slate-700 hover:bg-slate-200">
+                                Open file
+                              </button>
+                              <button type="button" onClick={() => void openTeacherProtectedFile(
+                                `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"}/courses/${material.course_id}/materials/${material.id}/file?download=true`,
+                                true,
+                                material.title,
+                              )} className="inline-flex min-h-10 items-center rounded-xl border border-slate-200 px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                                Download
+                              </button>
+                            </div>
                           )}
                         </div>
                       </div>
