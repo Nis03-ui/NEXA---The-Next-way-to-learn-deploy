@@ -620,7 +620,6 @@ export default function AdminPage() {
           />
         </section>
       </div>
-      </motion.div>
     </AppShell>
   )
 }
