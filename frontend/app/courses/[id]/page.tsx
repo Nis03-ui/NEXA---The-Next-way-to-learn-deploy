@@ -58,6 +58,7 @@ export default function CoursePage() {
   const [activeTab, setActiveTab] = useState<Tab>("overview")
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
+  const [completedEvents, setCompletedEvents] = useState<Record<number, string>>({})
 
   useEffect(() => {
     if (!Number.isFinite(courseId)) return
@@ -88,6 +89,7 @@ export default function CoursePage() {
         setCourseMaterials(courseMaterialData)
         setCourseAssignments(assignmentData)
         setEvents(scheduleData)
+        try { const completions = await schedule.completions(courseId); setCompletedEvents(Object.fromEntries(completions.map((item) => [item.event_id, item.completed_at]))) } catch { setCompletedEvents({}) }
 
         /*
          * The existing quiz API returns all quizzes.
