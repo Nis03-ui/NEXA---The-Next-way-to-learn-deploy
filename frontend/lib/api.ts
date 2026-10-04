@@ -1,3 +1,5 @@
+import { clearAuth, getRefreshToken, getToken, setAuth } from "@/lib/auth/storage"
+
 const API =
   process.env.NEXT_PUBLIC_API_URL ||
   "https://nexa-the-next-way-to-learn-deploy-2.onrender.com/api/v1"
@@ -273,55 +275,68 @@ export async function api<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
-  const token =
-    typeof window !== "undefined"
-      ? localStorage.getItem("nexa_token")
-      : null
+  const makeRequest = async (accessToken: string | null) => {
+    const headers = new Headers(options.headers)
 
-  const headers = new Headers(options.headers)
+    if (options.body && !(options.body instanceof FormData)) {
+      headers.set("Content-Type", "application/json")
+    }
 
-  /*
-   * IMPORTANT:
-   *
-   * JSON requests need Content-Type: application/json.
-   *
-   * FormData requests MUST NOT manually set Content-Type.
-   * The browser automatically sets:
-   *
-   * multipart/form-data; boundary=...
-   */
-  if (
-    options.body &&
-    !(options.body instanceof FormData)
-  ) {
-    headers.set("Content-Type", "application/json")
+    if (accessToken) {
+      headers.set("Authorization", `Bearer ${accessToken}`)
+    }
+
+    return fetch(`${API}${path}`, {
+      ...options,
+      headers,
+    })
   }
 
-  if (token) {
-    headers.set("Authorization", `Bearer ${token}`)
+  const parseResponse = async (response: Response): Promise<T> => {
+    const data = await response.json().catch(() => null)
+
+    if (!response.ok) {
+      const error = data as ApiError | null
+      throw new Error(
+        getErrorMessage(error, `Request failed with status ${response.status}`),
+      )
+    }
+
+    return data as T
   }
 
-  const response = await fetch(`${API}${path}`, {
-    ...options,
-    headers,
-  })
+  let response = await makeRequest(getToken())
 
-  const data = await response
-    .json()
-    .catch(() => null)
+  // Recover automatically from an expired access token using the stored refresh token.
+  // Never refresh the refresh endpoint itself.
+  if (response.status === 401 && path !== "/auth/refresh" && typeof window !== "undefined") {
+    const refreshToken = getRefreshToken()
 
-  if (!response.ok) {
-    const error = data as ApiError | null
+    if (refreshToken) {
+      try {
+        const refreshResponse = await makeRequest(null)
+        // makeRequest uses the current path, so refresh through the dedicated endpoint.
+        const refreshHeaders = new Headers({ "Content-Type": "application/json" })
+        const refreshed = await fetch(`${API}/auth/refresh`, {
+          method: "POST",
+          headers: refreshHeaders,
+          body: JSON.stringify({ refresh_token: refreshToken }),
+        })
 
-    throw new Error(
-      getErrorMessage(
-        error,
-        `Request failed with status ${response.status}`,
-      ),
-    )
+        if (refreshed.ok) {
+          const tokens = (await refreshed.json()) as LoginResponse
+          setAuth(tokens.access_token, tokens.refresh_token, tokens.user)
+          response = await makeRequest(tokens.access_token)
+        } else {
+          clearAuth()
+        }
+      } catch {
+        clearAuth()
+      }
+    }
   }
 
-  return data as T
+  return parseResponse(response)
 }
 
 /* =========================================================
