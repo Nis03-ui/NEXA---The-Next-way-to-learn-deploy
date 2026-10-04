@@ -21,6 +21,7 @@ import {
 import AppShell from "@/components/layout/AppShell"
 import {
   assignments,
+  assignmentFileUrl,
   courses,
   type Assignment,
   type AssignmentSubmission,
@@ -152,6 +153,25 @@ export default function AssignmentPage() {
     } finally {
       setSubmitting(false)
     }
+  }
+
+  function openSubmissionFile(download = false) {
+    if (!submission?.file_url) return
+    const token = localStorage.getItem("nexa_token")
+    if (!token) { setMessage("You are not authenticated."); return }
+    void fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"}/assignments/${assignmentId}/submissions/${submission.id}/file${download ? "?download=true" : ""}`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`Unable to open submission (${response.status})`)
+        const blob = await response.blob()
+        const url = URL.createObjectURL(blob)
+        if (download) {
+          const a = document.createElement("a"); a.href = url; a.download = submission.file_url?.split("/").pop() || "submission"; document.body.appendChild(a); a.click(); a.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 1000)
+        } else {
+          window.open(url, "_blank", "noopener,noreferrer")
+          setTimeout(() => URL.revokeObjectURL(url), 60000)
+        }
+      }).catch((e) => setMessage(e instanceof Error ? e.message : "Unable to open submission."))
   }
 
   if (loading) {
@@ -286,16 +306,15 @@ export default function AssignmentPage() {
 
               <div className="mt-3 flex flex-wrap gap-3">
                 {assignment.file_url && (
-                  <a
-                    href={assignment.file_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-slate-950 px-4 text-xs font-bold text-white"
-                  >
-                    <FileText size={14} />
-                    Open assignment file
-                    <ExternalLink size={13} />
-                  </a>
+                  <button type="button" onClick={() => {
+                    const token = localStorage.getItem("nexa_token")
+                    if (!token) { setMessage("You are not authenticated."); return }
+                    void fetch(assignmentFileUrl(assignment.id), { headers: { Authorization: `Bearer ${token}` } })
+                      .then(async (r) => { if (!r.ok) throw new Error(`Unable to open assignment file (${r.status})`); const u = URL.createObjectURL(await r.blob()); window.open(u, "_blank", "noopener,noreferrer"); setTimeout(() => URL.revokeObjectURL(u), 60000) })
+                      .catch((e) => setMessage(e instanceof Error ? e.message : "Unable to open assignment file."))
+                  }} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-slate-950 px-4 text-xs font-bold text-white">
+                    <FileText size={14} /> Open assignment file <ExternalLink size={13} />
+                  </button>
                 )}
 
                 {assignment.external_url && (
@@ -366,6 +385,12 @@ export default function AssignmentPage() {
                 </div>
               </div>
 
+              {submission?.file_url && (
+                <div className="flex flex-wrap gap-2">
+                  <button type="button" onClick={() => openSubmissionFile(false)} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-slate-950 px-4 text-xs font-bold text-white"><FileText size={15}/> View submitted file <ExternalLink size={13}/></button>
+                  <button type="button" onClick={() => openSubmissionFile(true)} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 px-4 text-xs font-bold text-slate-700"><FileText size={15}/> Download submitted file</button>
+                </div>
+              )}
               {submission?.external_url && (
                 <a
                   href={submission.external_url}
