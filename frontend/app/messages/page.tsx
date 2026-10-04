@@ -6,6 +6,7 @@ import { Paperclip, Link2, Send, Image as ImageIcon, MessageCircle, Search, X, F
 import AppShell from "@/components/layout/AppShell"
 import { useAuth } from "@/providers/AuthProvider"
 import { messages, messageFileUrl, type DirectMessage, type MessageContact } from "@/lib/lms"
+import { getToken } from "@/lib/auth/storage"
 
 function MessagesContent() {
   const { user } = useAuth()
@@ -143,13 +144,14 @@ function MessagesContent() {
                         <div className={["max-w-[82%] rounded-2xl px-4 py-3 shadow-sm", mine ? "bg-slate-950 text-white" : "border border-slate-200 bg-white text-slate-800"].join(" ")}>
                           {message.body && <p className="whitespace-pre-wrap text-sm leading-6">{message.body}</p>}
                           {message.link_url && <a href={message.link_url} target="_blank" rel="noreferrer" className="mt-2 flex items-center gap-2 rounded-xl bg-white/10 px-3 py-2 text-xs font-semibold underline underline-offset-2"><Link2 size={14} /> {message.link_url}</a>}
-                          {message.file_url && (message.file_type?.startsWith("image/") ? (
-                            <a href={messageFileUrl(message.file_url)} target="_blank" rel="noreferrer" className="mt-2 block overflow-hidden rounded-xl">
-                              <img src={messageFileUrl(message.file_url)} alt={message.file_name || "Shared image"} className="max-h-72 w-auto max-w-full rounded-xl object-contain" />
-                            </a>
-                          ) : (
-                            <a href={messageFileUrl(message.file_url)} target="_blank" rel="noreferrer" className="mt-2 flex items-center gap-2 rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700"><FileText size={15} /> {message.file_name || "Download attachment"}</a>
-                          ))}
+                          {message.file_url && (
+                            <MessageAttachment
+                              url={messageFileUrl(message.file_url)}
+                              name={message.file_name || "attachment"}
+                              type={message.file_type || ""}
+                              mine={mine}
+                            />
+                          )}
                           <p className={mine ? "mt-2 text-[10px] text-white/50" : "mt-2 text-[10px] text-slate-400"}>{new Intl.DateTimeFormat("en", { hour: "numeric", minute: "2-digit" }).format(new Date(message.created_at))}</p>
                         </div>
                       </div>
@@ -183,5 +185,57 @@ export default function MessagesPage() {
     <Suspense fallback={<div className="mx-auto max-w-7xl p-8 text-sm text-slate-500">Loading messages...</div>}>
       <MessagesContent />
     </Suspense>
+  )
+}
+
+
+function MessageAttachment({
+  url,
+  name,
+  type,
+  mine,
+}: {
+  url: string
+  name: string
+  type: string
+  mine: boolean
+}) {
+  const [objectUrl, setObjectUrl] = useState<string | null>(null)
+  const [error, setError] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    let createdUrl: string | null = null
+    const load = async () => {
+      const token = getToken()
+      if (!token) { setError(true); return }
+      try {
+        const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+        if (!response.ok) throw new Error("Unable to load attachment")
+        const blob = await response.blob()
+        createdUrl = URL.createObjectURL(blob)
+        if (active) setObjectUrl(createdUrl)
+      } catch { if (active) setError(true) }
+    }
+    void load()
+    return () => { active = false; if (createdUrl) URL.revokeObjectURL(createdUrl) }
+  }, [url])
+
+  if (error) return <p className="mt-2 text-xs text-red-500">Unable to load attachment.</p>
+  if (!objectUrl) return <div className="mt-2 rounded-xl bg-slate-100 px-3 py-2 text-xs text-slate-500">Loading attachment…</div>
+
+  const image = type.startsWith("image/")
+  return (
+    <div className="mt-2 space-y-2">
+      {image && <img src={objectUrl} alt={name} className="max-h-72 w-auto max-w-full rounded-xl object-contain" />}
+      <div className="flex flex-wrap gap-2">
+        <a href={objectUrl} target="_blank" rel="noreferrer" className={mine ? "inline-flex items-center gap-2 rounded-lg bg-white/10 px-3 py-2 text-xs font-semibold" : "inline-flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700"}>
+          {image ? <ImageIcon size={14} /> : <FileText size={14} />} View
+        </a>
+        <a href={objectUrl} download={name} className={mine ? "inline-flex items-center gap-2 rounded-lg bg-white/10 px-3 py-2 text-xs font-semibold" : "inline-flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700"}>
+          Download
+        </a>
+      </div>
+    </div>
   )
 }
