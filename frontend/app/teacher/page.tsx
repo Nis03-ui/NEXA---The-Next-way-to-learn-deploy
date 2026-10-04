@@ -449,7 +449,7 @@ export default function TeacherPage() {
                   </div>
                 </motion.article>
               ))}
-            </div>
+            </motion.div>
           )}
         </section>
 
