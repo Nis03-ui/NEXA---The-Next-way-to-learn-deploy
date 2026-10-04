@@ -1,6 +1,8 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from app.api import admin, ai, auth, teacher, users
@@ -32,6 +34,8 @@ async def lifespan(app: FastAPI):
     # Dispose database connections when the application shuts down.
     await engine.dispose()
 
+
+Path("uploads/materials").mkdir(parents=True, exist_ok=True)
 
 app = FastAPI(
     title=settings.app_name,
@@ -68,6 +72,8 @@ app.add_exception_handler(
     general_error_handler,
 )
 
+
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # ============================================================
 # API Routes
