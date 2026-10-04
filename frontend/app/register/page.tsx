@@ -13,7 +13,9 @@ import {
   UsersRound,
   X,
 } from "lucide-react"
-import { useState, type FormEvent } from "react"
+import { useEffect, useRef, useState, type FormEvent } from "react"
+import { motion } from "framer-motion"
+import gsap from "gsap"
 import { useRouter } from "next/navigation"
 
 import { auth } from "@/lib/api"
@@ -43,6 +45,23 @@ function getPasswordChecks(password: string) {
 
 export default function RegisterPage() {
   const router = useRouter()
+  const visualRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!visualRef.current) return
+    const ctx = gsap.context(() => {
+      gsap.to(".register-orb", {
+        y: -16,
+        x: 8,
+        duration: 4.5,
+        ease: "sine.inOut",
+        repeat: -1,
+        yoyo: true,
+        stagger: 0.6,
+      })
+    }, visualRef)
+    return () => ctx.revert()
+  }, [])
   const { login } = useAuth()
 
   const [name, setName] = useState("")
@@ -142,8 +161,10 @@ export default function RegisterPage() {
     <main className="min-h-screen bg-[#f8fafc]">
       <div className="grid min-h-screen lg:grid-cols-[0.9fr_1.1fr]">
         {/* Brand panel */}
-        <section className="relative hidden overflow-hidden bg-slate-950 p-10 text-white lg:flex lg:flex-col lg:justify-between">
+        <section ref={visualRef} className="relative hidden overflow-hidden bg-slate-950 p-10 text-white lg:flex lg:flex-col lg:justify-between">
           <div className="pointer-events-none absolute inset-0 opacity-40">
+            <div className="register-orb absolute -left-20 top-24 h-64 w-64 rounded-full bg-blue-600/20 blur-3xl" />
+            <div className="register-orb absolute bottom-0 right-0 h-72 w-72 rounded-full bg-violet-600/15 blur-3xl" />
             <div className="absolute -right-32 top-20 h-80 w-80 rounded-full bg-blue-600/20 blur-3xl" />
             <div className="absolute bottom-0 left-0 h-96 w-96 rounded-full bg-violet-600/10 blur-3xl" />
             <div className="nexa-dot-grid absolute inset-0 opacity-10" />
@@ -209,7 +230,7 @@ export default function RegisterPage() {
 
         {/* Form */}
         <section className="flex items-center justify-center px-5 py-8 sm:px-8 lg:px-12">
-          <div className="w-full max-w-lg">
+          <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="w-full max-w-lg">
             <Link
               href="/"
               className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition hover:text-slate-950"
@@ -601,7 +622,7 @@ export default function RegisterPage() {
                 </p>
               </div>
             </div>
-          </div>
+          </motion.div>
         </section>
       </div>
     </main>
