@@ -170,6 +170,15 @@ export default function TeacherDashboard() {
           </div>
         </motion.section>
 
+        <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.22, duration: 0.4 }} className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6">
+          <div className="mb-4">
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Assessment performance</p>
+            <h2 className="mt-2 text-xl font-black text-slate-950">Average quiz scores</h2>
+            <p className="mt-1 text-xs text-slate-500">Calculated from submitted attempts across your courses.</p>
+          </div>
+          {loading ? <div className="h-64 animate-pulse rounded-2xl bg-slate-50" /> : quizAnalytics.length === 0 ? <div className="grid h-64 place-items-center rounded-2xl bg-slate-50 text-xs text-slate-400">Submit quiz attempts to see performance analytics.</div> : <AnalyticsChart labels={quizAnalytics.map((item) => item.title)} values={quizAnalytics.map((item) => item.average)} label="Average score (%)" />}
+        </motion.section>
+
         <section className="grid gap-5 lg:grid-cols-[1.35fr_.65fr]">
           <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6">
             <div className="flex items-start justify-between gap-4">
@@ -193,8 +202,8 @@ export default function TeacherDashboard() {
                   </Link>
                 </div>
               ) : (
-                courseList.slice(0, 5).map((course) => (
-                  <Link key={course.id} href={`/teacher/courses/${course.id}`} className="flex items-center gap-3 rounded-2xl border border-slate-100 p-4 transition hover:border-slate-300 hover:bg-slate-50">
+                courseList.slice(0, 5).map((course, index) => (
+                  <motion.div initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.05 * index, duration: 0.3 }} whileHover={{ x: 3 }} className="rounded-2xl">\n                    <Link key={course.id} href={`/teacher/courses/${course.id}`} className="flex min-h-16 items-center gap-3 rounded-2xl border border-slate-100 p-4 transition hover:border-slate-300 hover:bg-slate-50">
                     <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-slate-100"><BookOpen size={18} className="text-slate-700" /></div>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-bold text-slate-900">{course.title}</p>
