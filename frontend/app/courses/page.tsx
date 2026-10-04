@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import {
@@ -183,7 +184,7 @@ export default function CoursesPage() {
               const busy = enrolling === course.id
 
               return (
-                <article
+                <motion.article
                   key={course.id}
                   className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-xl hover:shadow-slate-900/5"
                 >
@@ -225,7 +226,7 @@ export default function CoursesPage() {
                           <ArrowRight size={15} />
                         </Link>
                       ) : (
-                        <button
+                        <motion.button whileTap={{ scale: 0.97 }}
                           type="button"
                           disabled={busy}
                           onClick={() => enroll(course.id)}
@@ -233,11 +234,11 @@ export default function CoursesPage() {
                         >
                           {busy ? "Enrolling..." : "Enroll in course"}
                           {!busy && <ArrowRight size={15} />}
-                        </button>
+                        </motion.button>
                       )}
                     </div>
                   </div>
-                </article>
+                </motion.article>
               )
             })}
           </div>
@@ -252,6 +253,7 @@ export default function CoursesPage() {
           </div>
         )}
       </div>
+      </motion.div>
     </AppShell>
   )
 }
