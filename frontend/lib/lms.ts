@@ -379,6 +379,12 @@ export const schedule = {
       },
     ),
 
+  completions: (courseId: number) =>
+    api<{ event_id: number; completed_at: string }[]>(`/courses/${courseId}/schedule/completions`),
+
+  done: (courseId: number, eventId: number) =>
+    api<{ event_id: number; completed_at: string }>(`/courses/${courseId}/schedule/${eventId}/done`, { method: "POST" }),
+
   delete: (courseId: number, eventId: number) =>
     api<{ message: string }>(
       `/courses/${courseId}/schedule/${eventId}`,
