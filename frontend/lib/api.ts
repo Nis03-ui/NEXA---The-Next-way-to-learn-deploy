@@ -205,6 +205,14 @@ export type QuizAttemptResponse = {
   }>
 }
 
+export type AdminAnnouncement = {
+  id: number
+  title: string
+  message: string
+  created_at: string
+  recipients: number
+}
+
 export type AdminStats = {
   total_users: number
   total_students: number
@@ -691,12 +699,15 @@ export const admin = {
   getUsers: () =>
     api<User[]>("/admin/users"),
 
+  getAnnouncements: () =>
+    api<AdminAnnouncement[]>("/admin/announcements"),
+
   updateUserRole: (
     userId: number,
     role: "ADMIN" | "TEACHER" | "STUDENT",
   ) =>
     api<User>(
-      `/admin/users/${userId}`,
+      `/admin/users/${userId}/role`,
       {
         method: "PATCH",
         body: JSON.stringify({
