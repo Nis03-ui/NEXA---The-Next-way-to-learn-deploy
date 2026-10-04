@@ -253,7 +253,6 @@ export default function CoursesPage() {
           </div>
         )}
       </div>
-      </motion.div>
     </AppShell>
   )
 }
