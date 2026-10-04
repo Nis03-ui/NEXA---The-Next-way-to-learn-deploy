@@ -11,6 +11,12 @@ export type Course = {
   updated_at?: string
 }
 
+export type AdminCourse = Course & {
+  teacher_name: string
+  teacher_email: string
+  enrolled_students: number
+}
+
 export type Enrollment = {
   id: number
   course_id: number
@@ -99,6 +105,9 @@ export const courses = {
 
   mine: () =>
     api<Course[]>("/courses/mine"),
+
+  adminOverview: () =>
+    api<AdminCourse[]>("/courses/admin/overview"),
 
   my: () =>
     api<Course[]>("/courses/my"),
