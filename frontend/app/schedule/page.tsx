@@ -176,7 +176,7 @@ export default function SchedulePage() {
               {canManage && selectedCourse && (
                 <button type="button" onClick={() => { resetForm(); setShowForm(true) }} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-white px-4 text-sm font-semibold text-slate-950">
                   <Plus size={16} /> Add event
-                </motion.button>
+                </button>
               )}
             </div>
           </div>
