@@ -21,7 +21,7 @@ from app.schemas.course_material import (
     CourseMaterialUpdate,
 )
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("uvicorn.error")
 
 router = APIRouter(
     prefix="/courses",
