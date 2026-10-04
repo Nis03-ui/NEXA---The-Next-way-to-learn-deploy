@@ -133,9 +133,7 @@ export default function RegisterPage() {
         role,
       })
 
-      router.push(
-        `/verify-email?email=${encodeURIComponent(email.trim().toLowerCase())}`,
-      )
+      router.push("/login")
     } catch (error) {
       setServerError(
         error instanceof Error
