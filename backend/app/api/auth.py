@@ -18,6 +18,7 @@ from app.schemas.auth import (
     MessageResponse,
     RefreshRequest,
     RegisterRequest,
+    RegisterResponse,
     ResetPasswordRequest,
     ResendVerificationRequest,
     TokenResponse,
@@ -328,7 +329,7 @@ async def resend_verification(
 
 @router.post(
     "/register",
-    response_model=TokenResponse,
+    response_model=RegisterResponse,
     status_code=status.HTTP_201_CREATED,
 )
 async def register(
@@ -409,10 +410,8 @@ async def register(
 
     await db.refresh(user)
 
-    return TokenResponse(
-        access_token="",
-        refresh_token="",
-        user=user,
+    return RegisterResponse(
+        message="Account created. Please check your email to verify your account.",
     )
 
 
