@@ -127,6 +127,87 @@ async def create_assignment(
 
 
 # ---------------------------------------------------------
+# TEACHER: UPLOAD ASSIGNMENT FILE
+# ---------------------------------------------------------
+
+@router.post(
+    "/courses/{course_id}/assignments/upload",
+    response_model=AssignmentResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def upload_assignment(
+    course_id: int,
+    file: UploadFile = File(...),
+    title: str = Form(...),
+    instructions: str | None = Form(None),
+    due_date: str | None = Form(None),
+    max_marks: int = Form(100),
+    published: bool = Form(True),
+    user: User = Depends(require_roles(Role.TEACHER, Role.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+):
+    await check_course_teacher(course_id, user, db)
+
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="A file is required")
+    if not title.strip():
+        raise HTTPException(status_code=422, detail="Assignment title is required")
+    if max_marks < 1:
+        raise HTTPException(status_code=422, detail="Maximum marks must be greater than zero")
+
+    parsed_due_date = None
+    if due_date:
+        from datetime import datetime
+        try:
+            parsed_due_date = normalize_datetime(datetime.fromisoformat(due_date.replace("Z", "+00:00")))
+        except ValueError:
+            raise HTTPException(status_code=422, detail="Invalid due date")
+
+    max_size = 10 * 1024 * 1024
+    storage_dir = Path("uploads") / "assignments" / str(course_id)
+    storage_dir.mkdir(parents=True, exist_ok=True)
+    suffix = Path(file.filename).suffix.lower()
+    safe_name = f"{uuid4().hex}{suffix}"
+    target = storage_dir / safe_name
+
+    size = 0
+    try:
+        with target.open("wb") as output:
+            while chunk := await file.read(1024 * 1024):
+                size += len(chunk)
+                if size > max_size:
+                    target.unlink(missing_ok=True)
+                    raise HTTPException(status_code=413, detail="File must be 10 MB or smaller")
+                output.write(chunk)
+    finally:
+        await file.close()
+
+    assignment = Assignment(
+        course_id=course_id,
+        created_by=user.id,
+        title=title.strip()[:200],
+        instructions=instructions,
+        due_date=parsed_due_date,
+        max_marks=max_marks,
+        file_url=f"/uploads/assignments/{course_id}/{safe_name}",
+        published=published,
+    )
+    db.add(assignment)
+    await db.flush()
+    await notify_course_students(
+        db=db,
+        course_id=course_id,
+        notification_type="ASSIGNMENT",
+        title="New Assignment",
+        message=f"New assignment: {assignment.title}",
+        assignment_id=assignment.id,
+    )
+    await db.commit()
+    await db.refresh(assignment)
+    return assignment
+
+
+# ---------------------------------------------------------
 # VIEW ASSIGNMENTS
 # ---------------------------------------------------------
 
