@@ -353,6 +353,7 @@ export default function TeacherCoursePage() {
         const created = await materials.upload(
           courseId,
           materialFile,
+          materialTitle.trim() || undefined,
           materialDescription.trim() || undefined,
           materialPublished,
         )
