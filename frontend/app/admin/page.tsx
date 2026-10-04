@@ -19,6 +19,7 @@ import {
 } from "lucide-react"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { motion } from "framer-motion"
+import { motion } from "framer-motion"
 
 import AppShell from "@/components/layout/AppShell"
 import AnalyticsChart from "@/components/dashboard/AnalyticsChart"
