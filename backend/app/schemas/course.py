@@ -61,3 +61,17 @@ class EnrollmentStudentResponse(BaseModel):
     email: str
     status: str
     enrolled_at: datetime
+
+
+class AdminCourseResponse(BaseModel):
+    id: int
+    title: str
+    description: str | None
+    subject: str
+    teacher_id: int
+    teacher_name: str
+    teacher_email: str
+    published: bool
+    enrolled_students: int
+    created_at: datetime
+    updated_at: datetime
