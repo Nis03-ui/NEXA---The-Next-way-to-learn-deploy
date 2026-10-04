@@ -195,7 +195,7 @@ async def send_message(
     db.add(message)
     await db.commit()
     await db.refresh(message)
-    if (message.drive_file_id):
+    if message.drive_file_id:
         message.file_url = f"/api/v1/messages/{user_id}/files/{message.id}"
         await db.commit()
         await db.refresh(message)
