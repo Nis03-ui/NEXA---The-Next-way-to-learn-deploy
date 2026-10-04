@@ -59,12 +59,6 @@ def upgrade() -> None:
         ["user_id"],
         unique=False,
     )
-    op.create_index(
-        "ix_email_verification_tokens_token_hash",
-        "email_verification_tokens",
-        ["token_hash"],
-        unique=True,
-    )
 
 
 def downgrade() -> None:
@@ -75,10 +69,6 @@ def downgrade() -> None:
     if "email_verification_tokens" not in inspector.get_table_names():
         return
 
-    op.drop_index(
-        "ix_email_verification_tokens_token_hash",
-        table_name="email_verification_tokens",
-    )
     op.drop_index(
         "ix_email_verification_tokens_user_id",
         table_name="email_verification_tokens",
