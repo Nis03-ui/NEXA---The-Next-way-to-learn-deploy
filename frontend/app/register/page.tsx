@@ -148,8 +148,8 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f8fafc]">
-      <div className="grid min-h-screen lg:grid-cols-[0.9fr_1.1fr]">
+    <main className="h-screen min-h-screen overflow-hidden bg-[#f8fafc]">
+      <div className="grid h-full min-h-full lg:grid-cols-[0.9fr_1.1fr]">
         {/* Brand panel */}
         <section ref={visualRef} className="relative hidden overflow-hidden bg-slate-950 p-10 text-white lg:flex lg:flex-col lg:justify-between">
           <div className="pointer-events-none absolute inset-0 opacity-40">
@@ -219,8 +219,8 @@ export default function RegisterPage() {
         </section>
 
         {/* Form */}
-        <section className="flex items-center justify-center px-5 py-8 sm:px-8 lg:px-12">
-          <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="w-full max-w-lg">
+        <section className="flex min-h-0 items-center justify-center overflow-y-auto px-4 py-5 sm:px-8 sm:py-7 lg:px-12 lg:py-8">
+          <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="w-full max-w-lg py-1 sm:py-2">
             <Link
               href="/"
               className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition hover:text-slate-950"
