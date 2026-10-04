@@ -13,6 +13,7 @@ class CourseUpdate(BaseModel):
     title: str | None = Field(default=None, min_length=2, max_length=200)
     description: str | None = Field(default=None, max_length=5000)
     subject: str | None = Field(default=None, min_length=1, max_length=100)
+    thumbnail_url: str | None = Field(default=None, max_length=1000)
     published: bool | None = None
 
 
@@ -23,6 +24,7 @@ class CourseResponse(BaseModel):
     title: str
     description: str | None
     subject: str
+    thumbnail_url: str | None
     teacher_id: int
     published: bool
     created_at: datetime
@@ -46,6 +48,7 @@ class CourseWithEnrollment(BaseModel):
     title: str
     description: str | None
     subject: str
+    thumbnail_url: str | None
     teacher_id: int
     published: bool
     created_at: datetime
@@ -68,6 +71,7 @@ class AdminCourseResponse(BaseModel):
     title: str
     description: str | None
     subject: str
+    thumbnail_url: str | None
     teacher_id: int
     teacher_name: str
     teacher_email: str
