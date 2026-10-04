@@ -18,7 +18,7 @@ import {
 
 import { useAuth } from "@/providers/AuthProvider"
 
-const emailPattern = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]{2,}$/
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
 export default function LoginPage() {
   const router = useRouter()
