@@ -221,7 +221,7 @@ export default function QuizzesPage() {
     <AppShell>
       <main className="min-h-screen bg-slate-50">
         <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-          <header className="mb-8">
+          <motion.header initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="mb-8">
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600">
               <HelpCircle className="h-3.5 w-3.5" />
               NEXA Assessments
@@ -235,7 +235,7 @@ export default function QuizzesPage() {
               Take quizzes created by your teachers and
               measure your understanding of each subject.
             </p>
-          </header>
+          </motion.header>
 
           {error && (
             <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -243,7 +243,7 @@ export default function QuizzesPage() {
             </div>
           )}
 
-          <section className="mb-6 grid gap-4 sm:grid-cols-3">
+          <motion.section initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08, duration: 0.3 }} className="mb-6 grid gap-4 sm:grid-cols-3">
             <MiniStat
               icon={<HelpCircle className="h-4 w-4" />}
               label="Available quizzes"
@@ -263,7 +263,7 @@ export default function QuizzesPage() {
               label="Ready to learn"
               value="Start"
             />
-          </section>
+          </motion.section>
 
           <section className="rounded-2xl border border-slate-200 bg-white">
             <div className="border-b border-slate-200 p-5">
