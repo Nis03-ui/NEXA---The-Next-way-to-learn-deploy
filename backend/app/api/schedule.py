@@ -95,7 +95,9 @@ async def create_event(
     event = ScheduleEvent(
         course_id=course_id,
         created_by=user.id,
-        **{\n            **data.model_dump(),\n            "start_time": normalize_datetime(data.start_time),\n            "end_time": normalize_datetime(data.end_time),\n        },
+        **data.model_dump(),
+        start_time=normalize_datetime(data.start_time),
+        end_time=normalize_datetime(data.end_time),
     )
 
     db.add(event)
@@ -206,6 +208,8 @@ async def update_event(
         )
 
     for field, value in values.items():
+        if field in ("start_time", "end_time") and value is not None:
+            value = normalize_datetime(value)
         setattr(event, field, value)
 
     await db.commit()
