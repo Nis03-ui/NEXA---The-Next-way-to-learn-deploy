@@ -484,6 +484,44 @@ async def get_my_submission(
 
 
 # ---------------------------------------------------------
+# VIEW SUBMITTED FILE
+# ---------------------------------------------------------
+
+@router.get("/assignments/{assignment_id}/submissions/{submission_id}/file")
+async def get_submission_file(
+    assignment_id: int,
+    submission_id: int,
+    download: bool = Query(False),
+    user: User = Depends(require_roles(Role.STUDENT, Role.TEACHER, Role.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+):
+    assignment = await db.get(Assignment, assignment_id)
+    submission = await db.get(AssignmentSubmission, submission_id)
+    if not assignment or not submission or submission.assignment_id != assignment_id:
+        raise HTTPException(status_code=404, detail="Submission file not found")
+
+    if user.role == Role.STUDENT and submission.student_id != user.id:
+        raise HTTPException(status_code=403, detail="You can only access your own submission")
+    if user.role == Role.STUDENT:
+        await check_student_enrollment(assignment.course_id, user.id, db)
+    else:
+        await check_course_teacher(assignment.course_id, user, db)
+
+    if not submission.file_url:
+        raise HTTPException(status_code=404, detail="This submission has no file")
+
+    file_path = Path(submission.file_url.lstrip('/'))
+    if not file_path.is_file():
+        raise HTTPException(status_code=404, detail="Submitted file is no longer available")
+
+    return FileResponse(
+        path=file_path,
+        filename=file_path.name,
+        media_type="application/octet-stream",
+        content_disposition_type="attachment" if download else "inline",
+    )
+
+# ---------------------------------------------------------
 # TEACHER: VIEW SUBMISSIONS
 # ---------------------------------------------------------
 
