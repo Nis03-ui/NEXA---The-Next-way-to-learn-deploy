@@ -20,6 +20,7 @@ import {
   Users,
   X,
   Upload,
+  MessageCircle,
 } from "lucide-react"
 
 import AppShell from "@/components/layout/AppShell"
@@ -1587,14 +1588,22 @@ export default function TeacherCoursePage() {
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => removeStudent(student)}
-                      disabled={
-                        removingStudent === student.student_id
-                      }
-                      className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-red-200 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50"
-                    >
+                    <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                      <Link
+                        href={`/messages?userId=${student.student_id}&courseId=${courseId}`}
+                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-slate-950 text-sm font-semibold text-white hover:bg-slate-800"
+                      >
+                        <MessageCircle className="h-4 w-4" />
+                        Message student
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => removeStudent(student)}
+                        disabled={
+                          removingStudent === student.student_id
+                        }
+                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-red-200 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50"
+                      >
                       {removingStudent === student.student_id ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
