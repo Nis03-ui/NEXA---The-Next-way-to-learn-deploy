@@ -915,6 +915,7 @@ async function fetchQuizzes(): Promise<QuizSummary[]> {
 }
 
 async function openProtectedFile(url: string, download: boolean, filename: string) {
+  const previewWindow = !download ? window.open("", "_blank") : null
   let token = getToken()
   if (!token) throw new Error("Your session has expired. Please sign in again.")
 
@@ -943,6 +944,7 @@ async function openProtectedFile(url: string, download: boolean, filename: strin
   }
 
   if (!response.ok) {
+    previewWindow?.close()
     throw new Error(`Unable to open file (${response.status})`)
   }
 
@@ -960,7 +962,7 @@ async function openProtectedFile(url: string, download: boolean, filename: strin
     return
   }
 
-  window.open(objectUrl, "_blank", "noopener,noreferrer")
+  if (previewWindow) previewWindow.location.href = objectUrl
   setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000)
 }
 
