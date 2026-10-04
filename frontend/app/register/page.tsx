@@ -19,7 +19,6 @@ import gsap from "gsap"
 import { useRouter } from "next/navigation"
 
 import { auth } from "@/lib/api"
-import { useAuth } from "@/providers/AuthProvider"
 
 type Role = "STUDENT" | "TEACHER"
 
@@ -62,8 +61,6 @@ export default function RegisterPage() {
     }, visualRef)
     return () => ctx.revert()
   }, [])
-  const { login } = useAuth()
-
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [role, setRole] = useState<Role>("STUDENT")
@@ -136,16 +133,9 @@ export default function RegisterPage() {
         role,
       })
 
-      const user = await login(
-        email.trim().toLowerCase(),
-        password,
+      router.push(
+        `/verify-email?email=${encodeURIComponent(email.trim().toLowerCase())}`,
       )
-
-      if (user.role === "TEACHER") {
-        router.push("/teacher")
-      } else {
-        router.push("/dashboard")
-      }
     } catch (error) {
       setServerError(
         error instanceof Error
@@ -321,7 +311,7 @@ export default function RegisterPage() {
 
                   <input
                     id="email"
-                    type="email"
+                    type="text"
                     value={email}
                     onChange={(event) => {
                       setEmail(event.target.value)
