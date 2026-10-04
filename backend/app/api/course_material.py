@@ -230,13 +230,15 @@ async def get_course_materials(
             detail="Access denied",
         )
 
+    query = select(CourseMaterial).where(
+        CourseMaterial.course_id == course_id,
+    )
+
+    if user.role == Role.STUDENT:
+        query = query.where(CourseMaterial.published.is_(True))
+
     result = await db.execute(
-        select(CourseMaterial)
-        .where(
-            CourseMaterial.course_id == course_id,
-            CourseMaterial.published.is_(True),
-        )
-        .order_by(CourseMaterial.created_at.desc())
+        query.order_by(CourseMaterial.created_at.desc())
     )
 
     return result.scalars().all()
