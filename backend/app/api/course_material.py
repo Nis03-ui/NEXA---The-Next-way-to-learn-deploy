@@ -127,6 +127,7 @@ async def upload_material(
     )
     db.add(material)
     await db.flush()
+    material.file_url = f"/api/v1/courses/{course_id}/materials/{material.id}/file"
     await notify_course_students(
         db=db,
         course_id=course_id,
