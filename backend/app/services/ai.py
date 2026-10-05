@@ -12,6 +12,7 @@ async def answer(
     db: AsyncSession | None = None,
     mode: str = "normal",
     user_id: int | None = None,
+    document_id: int | None = None,
 ):
     return await orchestrator.run(
         message=message,
@@ -19,4 +20,5 @@ async def answer(
         db=db,
         mode=mode,
         user_id=user_id,
+        document_id=document_id,
     )
