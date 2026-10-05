@@ -66,7 +66,10 @@ class KnowledgeAgent(BaseAgent):
                 "Database session is required for Knowledge Agent."
             )
 
-        course_results = await self.retrieve_course_content(
+        # When the student explicitly selected a PDF, that PDF is the
+        # authoritative source for this Tutor request. Do not mix in
+        # unrelated course chunks.
+        course_results = [] if document_id is not None else await self.retrieve_course_content(
             message,
             db,
         )
