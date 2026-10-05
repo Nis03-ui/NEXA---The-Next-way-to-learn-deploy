@@ -310,6 +310,7 @@ async def chat(
             db=db,
             mode=data.mode,
             user_id=user.id,
+            document_id=data.document_id,
         )
 
         # --------------------------------------------------------
