@@ -453,6 +453,7 @@ export const ai = {
     message: string,
     sessionId?: number,
     mode: TutorMode = "normal",
+    documentId?: number,
   ) =>
     api<AIChatResponse>("/ai/chat", {
       method: "POST",
