@@ -34,7 +34,12 @@ class AIOrchestrator:
         self,
         message: str,
         mode: str = "normal",
+        document_id: int | None = None,
     ) -> str:
+
+        # A selected uploaded PDF is an explicit knowledge source.
+        if document_id is not None:
+            return "knowledge"
 
         # ---------------------------------------------------------
         # EXPLICIT TUTOR MODE
@@ -165,11 +170,13 @@ class AIOrchestrator:
         db: AsyncSession | None = None,
         mode: str = "normal",
         user_id: int | None = None,
+        document_id: int | None = None,
     ) -> AgentResult:
 
         agent_name = self.select_agent(
             message=message,
             mode=mode,
+            document_id=document_id,
         )
 
         agent = self.agents[agent_name]
@@ -188,4 +195,5 @@ class AIOrchestrator:
             db=db,
             mode=mode,
             user_id=user_id,
+            document_id=document_id,
         )
