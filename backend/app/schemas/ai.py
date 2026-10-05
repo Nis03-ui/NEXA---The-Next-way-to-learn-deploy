@@ -21,6 +21,9 @@ class ChatRequest(BaseModel):
 
     session_id: int | None = None
 
+    # When set, Tutor must answer from this specific uploaded PDF.
+    document_id: int | None = None
+
     mode: TutorMode = "normal"
 
 
