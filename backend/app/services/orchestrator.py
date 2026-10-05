@@ -189,11 +189,15 @@ class AIOrchestrator:
                 "Database session is required for Knowledge Agent."
             )
 
-        return await agent.run(
-            message=message,
-            conversation=conversation,
-            db=db,
-            mode=mode,
-            user_id=user_id,
-            document_id=document_id,
-        )
+        agent_kwargs = {
+            "message": message,
+            "conversation": conversation,
+            "db": db,
+            "mode": mode,
+            "user_id": user_id,
+        }
+
+        if document_id is not None:
+            agent_kwargs["document_id"] = document_id
+
+        return await agent.run(**agent_kwargs)
