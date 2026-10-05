@@ -33,6 +33,15 @@ class StudentDocumentSearchService:
             query_embedding
         )
 
+        filters = [
+            StudentDocument.owner_id == owner_id,
+            StudentDocumentChunk.embedding.is_not(None),
+            distance <= max_distance,
+        ]
+
+        if document_id is not None:
+            filters.append(StudentDocument.id == document_id)
+
         result = await db.execute(
             select(
                 StudentDocumentChunk,
@@ -43,12 +52,7 @@ class StudentDocumentSearchService:
                 StudentDocument,
                 StudentDocument.id == StudentDocumentChunk.document_id,
             )
-            .where(
-                StudentDocument.owner_id == owner_id,
-                StudentDocumentChunk.embedding.is_not(None),
-                *([StudentDocument.id == document_id] if document_id is not None else []),
-                distance <= max_distance,
-            )
+            .where(*filters)
             .order_by(distance)
             .limit(top_k)
         )
