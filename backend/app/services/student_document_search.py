@@ -24,6 +24,7 @@ class StudentDocumentSearchService:
         owner_id: int,
         db: AsyncSession,
         top_k: int = 5,
+        document_id: int | None = None,
         max_distance: float = 0.80,
     ) -> list[StudentDocumentSearchResult]:
         query_embedding = self.embedding_service.embed(query)
@@ -45,6 +46,7 @@ class StudentDocumentSearchService:
             .where(
                 StudentDocument.owner_id == owner_id,
                 StudentDocumentChunk.embedding.is_not(None),
+                *([StudentDocument.id == document_id] if document_id is not None else []),
                 distance <= max_distance,
             )
             .order_by(distance)
