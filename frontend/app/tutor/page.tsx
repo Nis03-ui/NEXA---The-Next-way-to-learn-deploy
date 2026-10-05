@@ -369,6 +369,12 @@ export default function TutorPage() {
     setLoading(true)
     setSources([])
 
+    if (uploadedNote) {
+      // Keep the selected PDF attached to the conversation until the
+      // user explicitly starts a new chat or replaces it.
+      console.info("TUTOR PDF CONTEXT:", uploadedNote.filename)
+    }
+
     if (textareaRef.current) {
       textareaRef.current.style.height =
         "auto"
@@ -379,6 +385,7 @@ export default function TutorPage() {
         message,
         sessionId ?? undefined,
         tutorMode,
+        uploadedNote?.id,
       )
 
       if (
