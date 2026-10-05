@@ -460,6 +460,7 @@ export const ai = {
         message,
         session_id: sessionId,
         mode,
+        document_id: documentId,
       }),
     }),
 
