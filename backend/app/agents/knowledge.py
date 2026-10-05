@@ -40,13 +40,15 @@ class KnowledgeAgent(BaseAgent):
         message: str,
         owner_id: int,
         db: AsyncSession,
+        document_id: int | None = None,
     ):
         return await self.student_document_search.search(
             query=message,
             owner_id=owner_id,
             db=db,
-            top_k=5,
-            max_distance=0.80,
+            top_k=8 if document_id is not None else 5,
+            max_distance=0.95 if document_id is not None else 0.80,
+            document_id=document_id,
         )
 
     async def run(
@@ -56,6 +58,7 @@ class KnowledgeAgent(BaseAgent):
         db: AsyncSession | None = None,
         mode: str = "normal",
         user_id: int | None = None,
+        document_id: int | None = None,
     ) -> AgentResult:
 
         if db is None:
@@ -75,6 +78,7 @@ class KnowledgeAgent(BaseAgent):
                 message,
                 owner_id=user_id,
                 db=db,
+                document_id=document_id,
             )
 
         if not course_results and not student_results:
